@@ -1,0 +1,116 @@
+/* ============================================================
+   Edifiq — Input (Monday.com style)
+   ============================================================ */
+
+.edq-input-wrapper { display: flex; flex-direction: column; gap: var(--space-2); width: 100%; }
+
+.edq-label {
+  font-family: var(--font-body);
+  font-size:   var(--text-sm);
+  font-weight: 600;
+  color:       var(--color-text-primary);
+  line-height: 1;
+}
+
+.edq-label__required { color: var(--mn-red); margin-left: var(--space-1); }
+.edq-label--disabled  { color: var(--color-text-muted); }
+
+.edq-input-row {
+  position:      relative;
+  display:       flex;
+  align-items:   stretch;
+  border:        1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background:    var(--color-surface);
+  transition:    border-color var(--transition-base), box-shadow var(--transition-base);
+
+  &:focus-within {
+    border-color: var(--mn-purple);
+    box-shadow:   var(--focus-ring);
+  }
+}
+
+.edq-input {
+  flex:        1;
+  border:      none;
+  outline:     none;
+  background:  transparent;
+  font-family: var(--font-body);
+  color:       var(--color-text-primary);
+  width:       100%;
+
+  &::placeholder { color: var(--color-text-muted); }
+  &[type='number'] {
+    -moz-appearance: textfield;
+    &::-webkit-outer-spin-button, &::-webkit-inner-spin-button { -webkit-appearance: none; }
+  }
+}
+
+.edq-input--sm { padding: var(--space-2) var(--space-3); font-size: var(--text-sm); height: 32px; }
+.edq-input--md { padding: var(--space-2) var(--space-3); font-size: var(--text-base); height: 36px; }
+.edq-input--lg { padding: var(--space-3) var(--space-4); font-size: var(--text-md); height: 42px; }
+
+.edq-input--has-prefix { padding-left: var(--space-2); }
+.edq-input--has-suffix { padding-right: var(--space-2); }
+
+.edq-input-prefix, .edq-input-suffix {
+  display:     flex;
+  align-items: center;
+  padding:     0 var(--space-3);
+  color:       var(--color-text-muted);
+  font-size:   var(--text-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.edq-input-prefix {
+  border-right:  1px solid var(--color-border);
+  background:    var(--color-surface-alt);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.edq-input-suffix {
+  border-left:   1px solid var(--color-border);
+  background:    var(--color-surface-alt);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.edq-input-suffix--btn {
+  background:    transparent;
+  border:        none;
+  border-left:   1px solid var(--color-border);
+  cursor:        pointer;
+  padding:       0 var(--space-3);
+  font-size:     var(--text-base);
+  color:         var(--color-text-muted);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  transition:    all var(--transition-base);
+
+  &:hover { background: var(--color-surface-alt); color: var(--color-text-primary); }
+  &:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+}
+
+/* Variants */
+.edq-input-wrapper--error .edq-input-row {
+  border-color: var(--mn-red);
+  &:focus-within { border-color: var(--mn-red); box-shadow: var(--focus-ring-danger); }
+}
+.edq-input-wrapper--success .edq-input-row {
+  border-color: var(--mn-green);
+  &:focus-within { border-color: var(--mn-green); box-shadow: var(--focus-ring-success); }
+}
+.edq-input-wrapper--warning .edq-input-row { border-color: var(--mn-yellow); }
+.edq-input-wrapper--disabled {
+  .edq-input-row { background: var(--color-surface-alt); border-color: var(--color-border); cursor: not-allowed; }
+  .edq-input { cursor: not-allowed; color: var(--color-text-muted); }
+}
+.edq-input-wrapper--readonly .edq-input-row { background: var(--color-surface-alt); }
+
+.edq-input-footer { display: flex; justify-content: space-between; align-items: center; min-height: 16px; }
+
+.edq-input-hint { font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.4; }
+.edq-input-hint--error   { color: var(--mn-red); }
+.edq-input-hint--success { color: var(--mn-green); }
+.edq-input-hint--warning { color: var(--color-warning); }
+
+.edq-input-counter { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--color-text-muted); margin-left: auto; }

@@ -1,0 +1,22 @@
+/* ============================================================
+   Edifiq — Login Component
+   ============================================================ */
+
+@use '../auth-shared';
+
+.password-field {
+  position: relative;
+  display:  flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.forgot-link {
+  align-self:  flex-end;
+  font-size:   var(--text-xs);
+  font-weight: 500;
+  color:       var(--color-text-secondary);
+  transition:  color var(--transition-base);
+
+  &:hover { color: var(--color-primary); }
+}

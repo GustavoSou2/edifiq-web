@@ -1,0 +1,62 @@
+/* ── Demo Page Layout ─────────────────────────────────────── */
+.demo-page {
+  max-width:  960px;
+  margin:     0 auto;
+  padding:    var(--space-8) var(--space-6);
+  display:    flex;
+  flex-direction: column;
+  gap:        var(--space-12);
+}
+
+.demo-header {
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: var(--space-6);
+
+  h1 {
+    font-family: var(--font-display);
+    font-size:   var(--text-3xl);
+    font-weight: 800;
+    color:       var(--color-text-primary);
+    margin-bottom: var(--space-2);
+  }
+
+  p {
+    color:     var(--color-text-secondary);
+    font-size: var(--text-base);
+  }
+}
+
+.demo-section {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-5);
+
+  h2 {
+    font-family: var(--font-display);
+    font-size:   var(--text-lg);
+    font-weight: 700;
+    color:       var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size:   var(--text-xs);
+    border-left: 3px solid var(--color-primary);
+    padding-left: var(--space-3);
+  }
+}
+
+.demo-row {
+  display:   flex;
+  flex-wrap: wrap;
+  gap:       var(--space-3);
+  align-items: flex-start;
+
+  &--align-center {
+    align-items: center;
+  }
+}
+
+.demo-grid {
+  display:               grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap:                   var(--space-5);
+}

@@ -1,1 +1,215 @@
-/* You can add global styles to this file, and also import other style files */
+/* ============================================================
+   Edifiq — Design System (Monday.com-inspired)
+   Paleta: roxo profundo + branco + cinzas frios
+   Tipografia: Poppins (display) + Inter (body)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Monday.com Color Palette ─────────────────────────────── */
+:root {
+  /* Brand — roxo Monday */
+  --mn-purple:        #6C5CE7;
+  --mn-purple-dark:   #5A4BD1;
+  --mn-purple-light:  #EDE9FF;
+  --mn-purple-hover:  rgba(108, 92, 231, 0.08);
+
+  /* Monday status colors */
+  --mn-green:         #00C875;
+  --mn-green-bg:      #E6FAF3;
+  --mn-yellow:        #FFCB00;
+  --mn-yellow-bg:     #FFFBE6;
+  --mn-red:           #E2445C;
+  --mn-red-bg:        #FDEEF1;
+  --mn-blue:          #0086C0;
+  --mn-blue-bg:       #E5F4FB;
+  --mn-orange:        #FF7575;
+  --mn-orange-bg:     #FFF0F0;
+  --mn-teal:          #00D0D0;
+  --mn-teal-bg:       #E5FAFA;
+
+  /* Sidebar */
+  --mn-sidebar-bg:    #2B2D42;
+  --mn-sidebar-hover: rgba(255,255,255,0.07);
+  --mn-sidebar-active:#6C5CE7;
+  --mn-sidebar-text:  rgba(255,255,255,0.75);
+  --mn-sidebar-muted: rgba(255,255,255,0.40);
+
+  /* Surfaces */
+  --color-surface:        #FFFFFF;
+  --color-surface-alt:    #F6F7FB;
+  --color-bg:             #F0F2F8;
+  --color-border:         #E6E9EF;
+  --color-border-strong:  #D0D4E0;
+
+  /* Text */
+  --color-text-primary:   #1F2033;
+  --color-text-secondary: #676879;
+  --color-text-muted:     #A8ABBE;
+  --color-text-inverse:   #FFFFFF;
+
+  /* Semantic aliases */
+  --color-primary:        var(--mn-purple);
+  --color-primary-dark:   var(--mn-purple-dark);
+  --color-primary-light:  var(--mn-purple-light);
+  --color-primary-hover:  var(--mn-purple-hover);
+  --color-success:        var(--mn-green);
+  --color-success-bg:     var(--mn-green-bg);
+  --color-success-border: #7EECC4;
+  --color-warning:        #C47A00;
+  --color-warning-bg:     var(--mn-yellow-bg);
+  --color-warning-border: #FFD97A;
+  --color-danger:         var(--mn-red);
+  --color-danger-bg:      var(--mn-red-bg);
+  --color-danger-border:  #F5A9B8;
+  --color-info:           var(--mn-blue);
+  --color-info-bg:        var(--mn-blue-bg);
+  --color-info-border:    #7ECBEA;
+
+  /* Auction */
+  --color-auction-live:   var(--mn-red);
+  --color-auction-ended:  var(--color-text-muted);
+  --color-urgent-badge:   var(--mn-red);
+
+  /* ── Typography ─────────────────────────────────────────── */
+  --font-display: 'Poppins', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
+
+  --text-xs:   0.6875rem;   /* 11px */
+  --text-sm:   0.8125rem;   /* 13px */
+  --text-base: 0.875rem;    /* 14px */
+  --text-md:   1rem;        /* 16px */
+  --text-lg:   1.125rem;    /* 18px */
+  --text-xl:   1.25rem;     /* 20px */
+  --text-2xl:  1.5rem;      /* 24px */
+  --text-3xl:  1.875rem;    /* 30px */
+  --text-4xl:  2.25rem;     /* 36px */
+  --text-5xl:  3rem;        /* 48px */
+
+  /* ── Spacing ────────────────────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+
+  /* ── Border Radius — Monday usa raios pequenos/médios ───── */
+  --radius-xs:   2px;
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+  --radius-2xl:  16px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ────────────────────────────────────────────── */
+  --shadow-xs:  0 1px 2px rgba(31,32,51,0.06);
+  --shadow-sm:  0 2px 6px rgba(31,32,51,0.08);
+  --shadow-md:  0 4px 16px rgba(31,32,51,0.10);
+  --shadow-lg:  0 8px 28px rgba(31,32,51,0.12);
+  --shadow-xl:  0 16px 48px rgba(31,32,51,0.14);
+  --shadow-card: 0 1px 4px rgba(31,32,51,0.08), 0 0 0 1px rgba(31,32,51,0.04);
+
+  /* ── Transitions ────────────────────────────────────────── */
+  --transition-fast:   0.1s ease;
+  --transition-base:   0.15s ease;
+  --transition-slow:   0.25s ease;
+  --transition-spring: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ── Focus Ring ─────────────────────────────────────────── */
+  --focus-ring:         0 0 0 3px rgba(108, 92, 231, 0.25);
+  --focus-ring-danger:  0 0 0 3px rgba(226, 68, 92, 0.25);
+  --focus-ring-success: 0 0 0 3px rgba(0, 200, 117, 0.25);
+
+  /* ── Sidebar dimensions ─────────────────────────────────── */
+  --sidebar-w:           220px;
+  --sidebar-w-collapsed: 56px;
+  --topbar-h:            52px;
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-text-primary);
+  background: var(--color-bg);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,h2,h3,h4,h5,h6 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+  color: var(--color-text-primary);
+  letter-spacing: -0.02em;
+}
+h1 { font-size: var(--text-4xl); font-weight: 700; }
+h2 { font-size: var(--text-3xl); font-weight: 700; }
+h3 { font-size: var(--text-2xl); font-weight: 600; }
+h4 { font-size: var(--text-xl);  font-weight: 600; }
+h5 { font-size: var(--text-lg);  font-weight: 600; }
+h6 { font-size: var(--text-md);  font-weight: 600; }
+
+p { font-size: var(--text-base); color: var(--color-text-secondary); line-height: 1.6; }
+
+a { color: var(--color-primary); text-decoration: none; transition: opacity var(--transition-fast); &:hover { opacity: 0.8; } }
+
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-strong); border-radius: var(--radius-full); }
+
+/* ── Animations ───────────────────────────────────────────── */
+@keyframes pulse-urgent { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
+@keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+@keyframes spin { to { transform:rotate(360deg); } }
+@keyframes fade-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fade-in-scale { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }
+@keyframes slide-up { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
+@keyframes slide-in-right { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+/* ── Monday-style utility classes ────────────────────────── */
+.mn-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xs);
+}
+
+.mn-section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Monday status dot colors */
+.dot-green  { background: var(--mn-green); }
+.dot-yellow { background: var(--mn-yellow); }
+.dot-red    { background: var(--mn-red); }
+.dot-blue   { background: var(--mn-blue); }
+.dot-purple { background: var(--mn-purple); }
+.dot-teal   { background: var(--mn-teal); }
+.dot-orange { background: var(--mn-orange); }
+.dot-gray   { background: var(--color-text-muted); }
