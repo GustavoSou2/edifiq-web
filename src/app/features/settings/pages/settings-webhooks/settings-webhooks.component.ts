@@ -23,15 +23,15 @@ const MOCK_WEBHOOKS: Partial<Webhook>[] = [
     id: 'wh1',
     url: 'https://minha-api.com/webhooks/edifiq',
     events: ['order.created', 'delivery.confirmed'],
-    is_active: true,
-    created_at: '2024-01-10T00:00:00Z',
+    isActive:  true,
+    createdAt: '2024-01-10T00:00:00Z',
   },
   {
     id: 'wh2',
     url: 'https://erp.empresa.com/hooks/orders',
     events: ['order.created', 'order.cancelled'],
-    is_active: false,
-    created_at: '2024-01-05T00:00:00Z',
+    isActive:  false,
+    createdAt: '2024-01-05T00:00:00Z',
   },
 ];
 
@@ -100,12 +100,12 @@ const MOCK_WEBHOOKS: Partial<Webhook>[] = [
                 <div class="webhook-item__actions">
                   <button
                     class="status-toggle"
-                    [class.status-toggle--active]="wh.is_active"
+                    [class.status-toggle--active]="wh.isActive"
                     (click)="toggleWebhook(wh)"
-                    [attr.aria-label]="wh.is_active ? 'Desativar webhook' : 'Ativar webhook'"
+                    [attr.aria-label]="wh.isActive ? 'Desativar webhook' : 'Ativar webhook'"
                   >
                     <span class="status-toggle__dot"></span>
-                    {{ wh.is_active ? 'Ativo' : 'Inativo' }}
+                    {{ wh.isActive ? 'Ativo' : 'Inativo' }}
                   </button>
                   <edq-button variant="ghost" size="sm" (clicked)="removeWebhook(wh)">Remover</edq-button>
                 </div>
@@ -141,11 +141,11 @@ export class SettingsWebhooksComponent {
     this.webhooks.update(list => [
       ...list,
       {
-        id:         `wh${Date.now()}`,
-        url:        this.newUrl,
-        events:     [...this.newEvents],
-        is_active:  true,
-        created_at: new Date().toISOString(),
+        id:        `wh${Date.now()}`,
+        url:       this.newUrl,
+        events:    [...this.newEvents],
+        isActive:  true,
+        createdAt: new Date().toISOString(),
       },
     ]);
     this.newUrl    = '';
@@ -155,7 +155,7 @@ export class SettingsWebhooksComponent {
 
   protected toggleWebhook(wh: Partial<Webhook>): void {
     this.webhooks.update(list =>
-      list.map(w => w.id === wh.id ? { ...w, is_active: !w.is_active } : w),
+      list.map(w => w.id === wh.id ? { ...w, isActive: !w.isActive } : w),
     );
   }
 

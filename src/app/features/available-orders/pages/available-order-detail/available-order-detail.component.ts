@@ -4,8 +4,8 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
-import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
@@ -20,50 +20,48 @@ interface OrderItem {
 }
 
 interface OrderDetail {
-  id:             string;
-  reference_code: string;
-  status:         'open' | 'in_auction';
-  is_urgent:      boolean;
-  delivery_city:  string;
-  delivery_state: string;
-  delivery_address: string;
-  items:          OrderItem[];
-  buyer_name:     string;
-  proposal_count: number;
-  auction_ends_at?: string;
-  created_at:     string;
-  notes?:         string;
+  id:              string;
+  referenceCode:   string | null;
+  status:          'open' | 'in_auction';
+  isUrgent:        boolean;
+  deliveryCity:    string | null;
+  deliveryState:   string | null;
+  deliveryAddress: string;
+  items:           OrderItem[];
+  proposalCount:   number;
+  expiresAt?:      string | null;
+  createdAt:       string;
+  notes?:          string | null;
 }
 
 const MOCK_ORDER: OrderDetail = {
-  id: '1',
-  reference_code: '#EDQ-2024-0042',
-  status: 'in_auction',
-  is_urgent: true,
-  delivery_city: 'Indaiatuba',
-  delivery_state: 'SP',
-  delivery_address: 'Rua das Palmeiras, 500 — Indaiatuba, SP',
+  id:              '1',
+  referenceCode:   '#EDQ-2024-0042',
+  status:          'in_auction',
+  isUrgent:        true,
+  deliveryCity:    'Indaiatuba',
+  deliveryState:   'SP',
+  deliveryAddress: 'Rua das Palmeiras, 500 — Indaiatuba, SP',
   items: [
-    { description: 'Cimento CP-II',    quantity: '50',  unit: 'sacos' },
-    { description: 'Areia média',      quantity: '10',  unit: 'm³' },
-    { description: 'Brita 1',          quantity: '5',   unit: 'm³' },
-    { description: 'Vergalhão CA-50',  quantity: '200', unit: 'kg' },
+    { description: 'Cimento CP-II',   quantity: '50',  unit: 'sacos' },
+    { description: 'Areia média',     quantity: '10',  unit: 'm³' },
+    { description: 'Brita 1',         quantity: '5',   unit: 'm³' },
+    { description: 'Vergalhão CA-50', quantity: '200', unit: 'kg' },
   ],
-  buyer_name:     'Construtora Alpha',
-  proposal_count: 3,
-  auction_ends_at: '2024-01-16T18:00:00Z',
-  created_at: '2024-01-15T10:00:00Z',
-  notes: 'Entrega obrigatória no período da manhã. Acesso pelo portão lateral.',
+  proposalCount: 3,
+  expiresAt:     '2024-01-16T18:00:00Z',
+  createdAt:     '2024-01-15T10:00:00Z',
+  notes:         'Entrega obrigatória no período da manhã. Acesso pelo portão lateral.',
 };
 
 @Component({
   selector: 'edq-available-order-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, DatePipe, FormsModule, PageHeaderComponent, StatusBadgeComponent, ButtonComponent, InputComponent, CommonModule],
+  imports: [RouterLink, DatePipe, FormsModule, PageHeaderComponent, StatusBadgeComponent, ButtonComponent, InputComponent],
   template: `
     <edq-page-header
-      [title]="order.reference_code"
+      [title]="order.referenceCode ?? order.id"
       subtitle="Detalhes do pedido disponível"
     >
       <edq-button slot="actions" variant="ghost" size="sm" routerLink="/app/available-orders">
@@ -76,13 +74,12 @@ const MOCK_ORDER: OrderDetail = {
       <!-- ── Coluna Principal ─────────────────────────────── -->
       <div class="detail-main">
 
-        <!-- Info do pedido -->
         <div class="detail-card">
           <div class="detail-card__header">
             <h2 class="detail-card__title">Informações do Pedido</h2>
             <div class="detail-card__badges">
               <edq-status-badge [status]="order.status" />
-              @if (order.is_urgent) {
+              @if (order.isUrgent) {
                 <span class="badge-urgent">URGENTE</span>
               }
             </div>
@@ -90,25 +87,25 @@ const MOCK_ORDER: OrderDetail = {
 
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-item__label">Comprador</span>
-              <span class="info-item__value">{{ order.buyer_name }}</span>
+              <span class="info-item__label">Local de Entrega</span>
+              <span class="info-item__value">📍 {{ order.deliveryAddress }}</span>
             </div>
             <div class="info-item">
-              <span class="info-item__label">Local de Entrega</span>
-              <span class="info-item__value">📍 {{ order.delivery_address }}</span>
+              <span class="info-item__label">Cidade</span>
+              <span class="info-item__value">{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
             </div>
             <div class="info-item">
               <span class="info-item__label">Propostas Recebidas</span>
-              <span class="info-item__value">{{ order.proposal_count }}</span>
+              <span class="info-item__value">{{ order.proposalCount }}</span>
             </div>
             <div class="info-item">
               <span class="info-item__label">Publicado em</span>
-              <span class="info-item__value">{{ order.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="info-item__value">{{ order.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
             </div>
-            @if (order.auction_ends_at) {
+            @if (order.expiresAt) {
               <div class="info-item info-item--highlight">
                 <span class="info-item__label">⏱️ Leilão encerra em</span>
-                <span class="info-item__value">{{ order.auction_ends_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span class="info-item__value">{{ order.expiresAt | date:'dd/MM/yyyy HH:mm' }}</span>
               </div>
             }
             @if (order.notes) {
@@ -120,7 +117,6 @@ const MOCK_ORDER: OrderDetail = {
           </div>
         </div>
 
-        <!-- Itens do pedido -->
         <div class="detail-card">
           <h2 class="detail-card__title">Itens Solicitados</h2>
           <div class="table-wrapper">
@@ -154,24 +150,14 @@ const MOCK_ORDER: OrderDetail = {
 
           <div class="form-group">
             <label class="form-label" for="total-price">Valor Total (R$)</label>
-            <edq-input
-              id="total-price"
-              type="number"
-              placeholder="0,00"
-              [(value)]="proposalPrice"
-            >
+            <edq-input id="total-price" type="number" placeholder="0,00" [(value)]="proposalPrice">
               <span slot="prefix">R$</span>
             </edq-input>
           </div>
 
           <div class="form-group">
             <label class="form-label" for="delivery-days">Prazo de Entrega (dias)</label>
-            <edq-input
-              id="delivery-days"
-              type="number"
-              placeholder="Ex: 3"
-              [(value)]="deliveryDays"
-            />
+            <edq-input id="delivery-days" type="number" placeholder="Ex: 3" [(value)]="deliveryDays" />
           </div>
 
           <div class="form-group">
@@ -185,19 +171,12 @@ const MOCK_ORDER: OrderDetail = {
             ></textarea>
           </div>
 
-          <edq-button
-            variant="primary"
-            size="md"
-            [disabled]="!canSubmit()"
-            (click)="submitProposal()"
-          >
+          <edq-button variant="primary" size="md" [disabled]="!canSubmit()" (click)="submitProposal()">
             Enviar Proposta
           </edq-button>
 
           @if (submitted()) {
-            <div class="success-message" role="alert">
-              ✅ Proposta enviada com sucesso!
-            </div>
+            <div class="success-message" role="alert">✅ Proposta enviada com sucesso!</div>
           }
         </div>
       </aside>
@@ -219,7 +198,7 @@ export class AvailableOrderDetailComponent {
 
   protected submitProposal(): void {
     if (!this.canSubmit()) return;
-    // TODO: integrar com API
+    // TODO: integrar com ProposalsApiService
     this.submitted.set(true);
   }
 }

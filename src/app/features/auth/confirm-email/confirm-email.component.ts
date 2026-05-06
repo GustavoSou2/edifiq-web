@@ -1,250 +1,166 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  computed,
-  ElementRef,
   inject,
-  OnInit,
-  QueryList,
   signal,
-  ViewChildren,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
 import { ButtonComponent } from '../../../shared/components/button/button.component';
-import { AuthService } from '../services/auth.service';
+import { AuthService }     from '../services/auth.service';
+import { ToastService }    from '../../../shared/services/toast.service';
 
-const CODE_LENGTH = 6;
-
+/**
+ * ConfirmEmailComponent — tela informativa pós-cadastro.
+ *
+ * A conta já foi criada e o usuário já está logado.
+ * Esta tela apenas informa que um link de verificação foi enviado
+ * e oferece a opção de reenviar ou continuar sem verificar.
+ *
+ * Rota: /auth/confirm-email
+ * Acessível também via banner no dashboard enquanto email_verified = false.
+ */
 @Component({
   selector: 'edq-confirm-email',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, ButtonComponent, RouterLink],
+  imports: [ButtonComponent, RouterLink],
   template: `
     <div class="auth-card">
 
+      <!-- Ícone animado -->
+      <div class="email-sent-icon" aria-hidden="true">
+        <div class="email-sent-icon__bg"></div>
+        <svg class="email-sent-icon__svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <!-- Envelope body -->
+          <rect x="4" y="10" width="40" height="28" rx="4"
+            stroke="currentColor" stroke-width="2" fill="none"/>
+          <!-- Envelope flap -->
+          <path d="M4 14l20 14L44 14"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- Linhas de velocidade (movimento) -->
+          <line x1="0" y1="22" x2="6" y2="22"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+          <line x1="0" y1="28" x2="4" y2="28"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.25"/>
+        </svg>
+      </div>
+
       <!-- Header -->
       <div class="auth-card__header">
-        <!-- Ícone animado -->
-        <div class="confirm-icon" aria-hidden="true">
-          <div class="confirm-icon__ring"></div>
-          <span class="confirm-icon__emoji">📬</span>
-        </div>
-
         <h2 class="auth-card__title">Verifique seu e-mail</h2>
         <p class="auth-card__subtitle">
-          Enviamos um código de 6 dígitos para<br>
-          <strong>{{ authService.pendingEmail() ?? 'seu e-mail' }}</strong>
+          Enviamos um link de confirmação para<br>
+          <strong>{{ email() }}</strong>
         </p>
       </div>
 
-      <!-- Error alert -->
-      @if (authService.error()) {
-        <div class="auth-alert auth-alert--error" role="alert">
-          <span class="auth-alert__icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-          </span>
-          <span>{{ authService.error() }}</span>
+      <!-- Instruções -->
+      <div class="instructions">
+        <div class="instruction-step">
+          <div class="instruction-step__num">1</div>
+          <p>Abra o e-mail que enviamos para <strong>{{ email() }}</strong></p>
         </div>
-      }
-
-      <!-- Success alert -->
-      @if (resendSuccess()) {
-        <div class="auth-alert auth-alert--success" role="status">
-          <span class="auth-alert__icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          </span>
-          <span>Novo código enviado! Verifique sua caixa de entrada.</span>
+        <div class="instruction-step">
+          <div class="instruction-step__num">2</div>
+          <p>Clique no botão <strong>"Confirmar e-mail"</strong> dentro do e-mail</p>
         </div>
-      }
-
-      <!-- OTP Input -->
-      <form class="auth-form" (ngSubmit)="handleSubmit()" novalidate>
-
-        <div class="otp-group" role="group" aria-label="Código de verificação">
-          @for (digit of digits(); track $index) {
-            <input
-              #otpInput
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              pattern="[0-9]"
-              class="otp-input"
-              [class.otp-input--filled]="digit !== ''"
-              [class.otp-input--error]="hasError()"
-              [value]="digit"
-              [attr.aria-label]="'Dígito ' + ($index + 1)"
-              (keydown)="handleKeydown($event, $index)"
-              (input)="handleInput($event, $index)"
-              (paste)="handlePaste($event)"
-              (focus)="handleFocus($index)"
-            />
-          }
+        <div class="instruction-step">
+          <div class="instruction-step__num">3</div>
+          <p>Pronto — sua conta estará totalmente ativada</p>
         </div>
-
-        @if (hasError()) {
-          <p class="otp-error" role="alert">
-            Código inválido. Tente novamente.
-          </p>
-        }
-
-        <edq-button
-          variant="primary"
-          type="submit"
-          size="lg"
-          [fullWidth]="true"
-          [loading]="authService.isLoading()"
-          [disabled]="!isCodeComplete()"
-        >
-          Verificar e-mail
-        </edq-button>
-
-      </form>
-
-      <!-- Resend -->
-      <div class="resend-area">
-        <p class="resend-text">Não recebeu o código?</p>
-
-        @if (resendCooldown() > 0) {
-          <span class="resend-timer">
-            Reenviar em {{ resendCooldown() }}s
-          </span>
-        } @else {
-          <button
-            type="button"
-            class="resend-btn"
-            [disabled]="authService.isLoading()"
-            (click)="handleResend()"
-          >
-            Reenviar código
-          </button>
-        }
       </div>
 
-      <!-- Back -->
+      <!-- Status badge -->
+      <div class="pending-badge" role="status">
+        <span class="pending-badge__dot"></span>
+        <span>Verificação pendente — você já pode usar a plataforma</span>
+      </div>
+
+      <!-- Ações -->
+      <div class="confirm-actions">
+        <!-- CTA principal: ir para o dashboard -->
+        <edq-button
+          variant="primary"
+          size="lg"
+          [fullWidth]="true"
+          routerLink="/app/dashboard"
+          (clicked)="goToDashboard()"
+        >
+          Ir para o Dashboard →
+        </edq-button>
+
+        <!-- Reenviar link -->
+        <div class="resend-row">
+          <span class="resend-row__text">Não recebeu o e-mail?</span>
+
+          @if (resendCooldown() > 0) {
+            <span class="resend-timer">Reenviar em {{ resendCooldown() }}s</span>
+          } @else {
+            <button
+              type="button"
+              class="resend-btn"
+              [disabled]="authService.isLoading()"
+              (click)="handleResend()"
+            >
+              @if (authService.isLoading()) {
+                <svg class="resend-btn__spinner" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+              }
+              Reenviar link
+            </button>
+          }
+        </div>
+      </div>
+
+      <!-- Dica sobre spam -->
+      <p class="spam-hint">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        Não encontrou? Verifique a pasta de spam ou lixo eletrônico.
+      </p>
+
+      <!-- Voltar -->
       <p class="auth-card__footer">
-        <a routerLink="/auth/register">← Voltar ao cadastro</a>
+        <a routerLink="/auth/login">← Voltar ao login</a>
       </p>
 
     </div>
   `,
   styleUrl: './confirm-email.component.scss',
 })
-export class ConfirmEmailComponent implements OnInit {
+export class ConfirmEmailComponent {
   protected readonly authService = inject(AuthService);
   private readonly router        = inject(Router);
+  private readonly toast         = inject(ToastService);
 
-  @ViewChildren('otpInput') otpInputs!: QueryList<ElementRef<HTMLInputElement>>;
-
-  /* ── State ──────────────────────────────────────────────── */
-  protected readonly digits         = signal<string[]>(Array(CODE_LENGTH).fill(''));
-  protected readonly hasError       = signal(false);
-  protected readonly resendSuccess  = signal(false);
   protected readonly resendCooldown = signal(0);
-
   private cooldownInterval: ReturnType<typeof setInterval> | null = null;
 
-  /* ── Computed ───────────────────────────────────────────── */
-  protected readonly isCodeComplete = computed(() =>
-    this.digits().every(d => d !== '')
-  );
+  protected readonly email = () =>
+    this.authService.pendingEmail() ?? this.authService.user()?.email ?? 'seu e-mail';
 
-  protected readonly fullCode = computed(() =>
-    this.digits().join('')
-  );
-
-  ngOnInit(): void {
-    // Redireciona se não há e-mail pendente
-    if (!this.authService.pendingEmail()) {
-      this.router.navigate(['/auth/register']);
-    }
+  goToDashboard(): void {
+    this.router.navigate(['/app/dashboard']);
   }
 
-  /* ── OTP Handlers ───────────────────────────────────────── */
-  handleInput(event: Event, index: number): void {
-    const input = event.target as HTMLInputElement;
-    const value = input.value.replace(/\D/g, '').slice(-1);
-
-    this.updateDigit(index, value);
-    input.value = value;
-
-    if (value && index < CODE_LENGTH - 1) {
-      this.focusInput(index + 1);
-    }
-
-    this.hasError.set(false);
-    this.authService.clearError();
-  }
-
-  handleKeydown(event: KeyboardEvent, index: number): void {
-    if (event.key === 'Backspace') {
-      if (this.digits()[index] === '' && index > 0) {
-        this.updateDigit(index - 1, '');
-        this.focusInput(index - 1);
-      } else {
-        this.updateDigit(index, '');
-      }
-    }
-
-    if (event.key === 'ArrowLeft' && index > 0) {
-      this.focusInput(index - 1);
-    }
-
-    if (event.key === 'ArrowRight' && index < CODE_LENGTH - 1) {
-      this.focusInput(index + 1);
-    }
-  }
-
-  handlePaste(event: ClipboardEvent): void {
-    event.preventDefault();
-    const pasted = event.clipboardData?.getData('text') ?? '';
-    const digits  = pasted.replace(/\D/g, '').slice(0, CODE_LENGTH).split('');
-
-    const newDigits = Array(CODE_LENGTH).fill('');
-    digits.forEach((d, i) => { newDigits[i] = d; });
-    this.digits.set(newDigits);
-
-    // Foca no próximo campo vazio ou no último
-    const nextEmpty = newDigits.findIndex(d => d === '');
-    this.focusInput(nextEmpty === -1 ? CODE_LENGTH - 1 : nextEmpty);
-  }
-
-  handleFocus(index: number): void {
-    // Seleciona o conteúdo ao focar
-    setTimeout(() => {
-      const input = this.otpInputs?.get(index)?.nativeElement;
-      input?.select();
-    });
-  }
-
-  /* ── Submit ─────────────────────────────────────────────── */
-  async handleSubmit(): Promise<void> {
-    if (!this.isCodeComplete()) return;
-
-    this.hasError.set(false);
-    this.authService.clearError();
-
-    const ok = await this.authService.confirmEmail(this.fullCode());
+  async handleResend(): Promise<void> {
+    const ok = await this.authService.resendVerificationLink();
 
     if (ok) {
-      await this.router.navigate(['/dashboard']);
+      this.toast.success('Link reenviado!', {
+        message: `Verifique a caixa de entrada de ${this.email()}.`,
+      });
+      this.startCooldown(60);
     } else {
-      this.hasError.set(true);
-      this.digits.set(Array(CODE_LENGTH).fill(''));
-      setTimeout(() => this.focusInput(0));
+      this.toast.error('Não foi possível reenviar.', {
+        message: 'Tente novamente em alguns instantes.',
+      });
     }
-  }
-
-  /* ── Resend ─────────────────────────────────────────────── */
-  async handleResend(): Promise<void> {
-    this.resendSuccess.set(false);
-    await this.authService.resendCode();
-    this.resendSuccess.set(true);
-    this.startCooldown(60);
-
-    setTimeout(() => this.resendSuccess.set(false), 4000);
   }
 
   private startCooldown(seconds: number): void {
@@ -260,20 +176,5 @@ export class ConfirmEmailComponent implements OnInit {
         return v - 1;
       });
     }, 1000);
-  }
-
-  /* ── Helpers ────────────────────────────────────────────── */
-  private updateDigit(index: number, value: string): void {
-    this.digits.update(prev => {
-      const next = [...prev];
-      next[index] = value;
-      return next;
-    });
-  }
-
-  private focusInput(index: number): void {
-    setTimeout(() => {
-      this.otpInputs?.get(index)?.nativeElement.focus();
-    });
   }
 }

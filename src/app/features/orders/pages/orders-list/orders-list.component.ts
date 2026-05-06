@@ -1,27 +1,22 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
 
-import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
-import { Order, OrderStatus } from '../../../../shared/types/domain.types';
-import { DatePipe } from '@angular/common';
-
-const MOCK_ORDERS: Order[] = [
-  { id: '1', reference_code: '#EDQ-2024-0042', status: 'in_auction', is_urgent: true,  delivery_city: 'Indaiatuba', delivery_state: 'SP', proposal_count: 3, created_at: '2024-01-15T10:00:00Z' } as any,
-  { id: '2', reference_code: '#EDQ-2024-0041', status: 'open',       is_urgent: false, delivery_city: 'Campinas',   delivery_state: 'SP', proposal_count: 0, created_at: '2024-01-14T09:00:00Z' } as any,
-  { id: '3', reference_code: '#EDQ-2024-0040', status: 'confirmed',  is_urgent: false, delivery_city: 'São Paulo',  delivery_state: 'SP', proposal_count: 5, created_at: '2024-01-13T08:00:00Z' } as any,
-  { id: '4', reference_code: '#EDQ-2024-0039', status: 'selected',   is_urgent: true,  delivery_city: 'Sorocaba',   delivery_state: 'SP', proposal_count: 4, created_at: '2024-01-12T07:00:00Z' } as any,
-  { id: '5', reference_code: '#EDQ-2024-0038', status: 'draft',      is_urgent: false, delivery_city: 'Jundiaí',    delivery_state: 'SP', proposal_count: 0, created_at: '2024-01-11T06:00:00Z' } as any,
-  { id: '6', reference_code: '#EDQ-2024-0037', status: 'cancelled',  is_urgent: false, delivery_city: 'Bauru',      delivery_state: 'SP', proposal_count: 2, created_at: '2024-01-10T05:00:00Z' } as any,
-];
+import { ButtonComponent }      from '../../../../shared/components/button/button.component';
+import { InputComponent }       from '../../../../shared/components/input/input.component';
+import { Order, OrderStatus }   from '../../../../shared/types/domain.types';
+import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
+import { DatePipe }             from '@angular/common';
 
 const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'all',        label: 'Todos' },
@@ -76,84 +71,106 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
       </div>
     </div>
 
-    <!-- Tabela -->
-    <div class="table-wrapper">
-      <table class="data-table" aria-label="Lista de pedidos">
-        <thead>
-          <tr>
-            <th scope="col">Referência</th>
-            <th scope="col">Status</th>
-            <th scope="col">Cidade</th>
-            <th scope="col">Propostas</th>
-            <th scope="col">Criado em</th>
-            <th scope="col"><span class="sr-only">Ações</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (order of filteredOrders(); track order.id) {
-            <tr class="table-row" [class.table-row--urgent]="order.is_urgent">
-              <td>
-                <div class="ref-cell">
-                  <span class="ref-code">{{ order.reference_code }}</span>
-                  @if (order.is_urgent) {
-                    <span class="badge-urgent">URGENTE</span>
-                  }
-                </div>
-              </td>
-              <td><edq-status-badge [status]="order.status" /></td>
-              <td class="city-cell">📍 {{ order.delivery_city }}, {{ order.delivery_state }}</td>
-              <td>
-                <span class="proposal-count" [class.proposal-count--zero]="!order.proposal_count">
-                  {{ order.proposal_count ?? 0 }}
-                </span>
-              </td>
-              <td class="date-cell">{{ order.created_at | date:'dd/MM/yyyy' }}</td>
-              <td>
-                <div class="row-actions">
-                  <edq-button variant="ghost" size="sm" [routerLink]="[order.id]">
-                    Ver
-                  </edq-button>
-                  @if (order.status === 'in_auction') {
-                    <edq-button variant="primary" size="sm" [routerLink]="[order.id, 'proposals']">
-                      Propostas
-                    </edq-button>
-                  }
-                </div>
-              </td>
-            </tr>
-          } @empty {
+    @if (isLoading()) {
+      <div class="table-loading" aria-live="polite">Carregando pedidos...</div>
+    } @else if (error()) {
+      <div class="table-error" role="alert">{{ error() }}</div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="data-table" aria-label="Lista de pedidos">
+          <thead>
             <tr>
-              <td colspan="6">
-                <div class="table-empty">
-                  <span>📦</span>
-                  <p>Nenhum pedido encontrado.</p>
-                  <edq-button variant="primary" size="sm" routerLink="new">Criar primeiro pedido</edq-button>
-                </div>
-              </td>
+              <th scope="col">Referência</th>
+              <th scope="col">Status</th>
+              <th scope="col">Cidade</th>
+              <th scope="col">Propostas</th>
+              <th scope="col">Criado em</th>
+              <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (order of filteredOrders(); track order.id) {
+              <tr class="table-row" [class.table-row--urgent]="order.isUrgent">
+                <td>
+                  <div class="ref-cell">
+                    <span class="ref-code">{{ order.referenceCode }}</span>
+                    @if (order.isUrgent) {
+                      <span class="badge-urgent">URGENTE</span>
+                    }
+                  </div>
+                </td>
+                <td><edq-status-badge [status]="order.status" /></td>
+                <td class="city-cell">📍 {{ order.deliveryCity }}, {{ order.deliveryState }}</td>
+                <td>
+                  <span class="proposal-count" [class.proposal-count--zero]="!order.proposalCount">
+                    {{ order.proposalCount ?? 0 }}
+                  </span>
+                </td>
+                <td class="date-cell">{{ order.createdAt | date:'dd/MM/yyyy' }}</td>
+                <td>
+                  <div class="row-actions">
+                    <edq-button variant="ghost" size="sm" [routerLink]="[order.id]">Ver</edq-button>
+                    @if (order.status === 'in_auction') {
+                      <edq-button variant="primary" size="sm" [routerLink]="[order.id, 'proposals']">
+                        Propostas
+                      </edq-button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="table-empty">
+                    <span>📦</span>
+                    <p>Nenhum pedido encontrado.</p>
+                    <edq-button variant="primary" size="sm" routerLink="new">Criar primeiro pedido</edq-button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   `,
   styleUrl: './orders-list.component.scss',
 })
-export class OrdersListComponent {
+export class OrdersListComponent implements OnInit {
+  private readonly ordersApi = inject(OrdersApiService);
+
   protected readonly statusFilters = STATUS_FILTERS;
   protected readonly activeStatus  = signal<OrderStatus | 'all'>('all');
   protected searchQuery            = '';
   protected urgentOnly             = false;
 
+  protected readonly orders    = signal<Order[]>([]);
+  protected readonly isLoading = signal(false);
+  protected readonly error     = signal<string | null>(null);
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  private load(): void {
+    this.isLoading.set(true);
+    this.error.set(null);
+    this.ordersApi.list().subscribe({
+      next:  res  => { this.orders.set(res.data); this.isLoading.set(false); },
+      error: ()   => { this.error.set('Erro ao carregar pedidos.'); this.isLoading.set(false); },
+    });
+  }
+
   protected readonly filteredOrders = computed(() => {
-    let list = MOCK_ORDERS;
+    let list = this.orders();
     const status = this.activeStatus();
     if (status !== 'all') list = list.filter(o => o.status === status);
-    if (this.urgentOnly)  list = list.filter(o => o.is_urgent);
+    if (this.urgentOnly)  list = list.filter(o => o.isUrgent);
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
       list = list.filter(o =>
-        o.reference_code.toLowerCase().includes(q) ||
-        o.delivery_city.toLowerCase().includes(q),
+        o.referenceCode?.toLowerCase().includes(q) ||
+        o.deliveryCity?.toLowerCase().includes(q),
       );
     }
     return list;

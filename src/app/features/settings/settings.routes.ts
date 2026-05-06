@@ -17,6 +17,13 @@ export const SETTINGS_ROUTES: Routes = [
       ),
   },
   {
+    path: 'categories',
+    loadComponent: () =>
+      import('./pages/settings-categories/settings-categories.component').then(
+        m => m.SettingsCategoriesComponent,
+      ),
+  },
+  {
     path: 'webhooks',
     loadComponent: () =>
       import('./pages/settings-webhooks/settings-webhooks.component').then(

@@ -32,6 +32,8 @@ const ICONS = {
   users:        'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
   settings:     'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z',
   profile:      'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
+  roles:        'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+  categories:   'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z',
   more:         'M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z',
   bell:         'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
   help:         'M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -57,10 +59,12 @@ const SUPPLIER_MAIN_NAV: NavItem[] = [
 ];
 
 const BUYER_SECONDARY_NAV: NavItem[] = [
-  { path: '/app/suppliers', label: 'Fornecedores',  icon: ICONS.suppliers },
-  { path: '/app/users',     label: 'Usuários',      icon: ICONS.users     },
-  { path: '/app/settings',  label: 'Configurações', icon: ICONS.settings  },
-  { path: '/app/profile',   label: 'Meu Perfil',    icon: ICONS.profile   },
+  { path: '/app/suppliers',   label: 'Fornecedores',    icon: ICONS.suppliers   },
+  { path: '/app/users',       label: 'Usuários',        icon: ICONS.users       },
+  { path: '/app/roles',       label: 'Roles',           icon: ICONS.roles       },
+  { path: '/app/categories',  label: 'Categorias',      icon: ICONS.categories  },
+  { path: '/app/settings',    label: 'Configurações',   icon: ICONS.settings    },
+  { path: '/app/profile',     label: 'Meu Perfil',      icon: ICONS.profile     },
 ];
 
 const SUPPLIER_SECONDARY_NAV: NavItem[] = [
@@ -166,14 +170,14 @@ const SUPPLIER_SECONDARY_NAV: NavItem[] = [
           <button
             class="user-btn"
             type="button"
-            [title]="authService.user()?.name ?? 'Sair'"
+            [title]="authService.user()?.fullName ?? 'Sair'"
             (click)="handleLogout()"
             aria-label="Sair da conta"
           >
             <div class="user-avatar">{{ userInitials() }}</div>
             @if (!sidebarCollapsed()) {
               <div class="user-info">
-                <span class="user-name">{{ authService.user()?.name }}</span>
+                <span class="user-name">{{ authService.user()?.fullName }}</span>
                 <span class="user-email">{{ authService.user()?.email }}</span>
               </div>
             }
@@ -346,7 +350,7 @@ export class AppLayoutComponent {
   );
 
   protected readonly userInitials = () => {
-    const name = this.authService.user()?.name ?? '';
+    const name = this.authService.user()?.fullName ?? '';
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase() || 'U';
   };
 

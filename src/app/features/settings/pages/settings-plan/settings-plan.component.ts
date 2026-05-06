@@ -6,7 +6,8 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { PlanName } from '../../../../shared/types/domain.types';
+
+type PlanName = 'free' | 'starter' | 'pro' | 'enterprise';
 
 interface PlanCard {
   name:     PlanName;

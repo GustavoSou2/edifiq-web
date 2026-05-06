@@ -107,6 +107,18 @@ export const routes: Routes = [
         title: 'Minhas Propostas — Edifiq',
       },
       {
+        path: 'categories',
+        loadChildren: () =>
+          import('./features/categories/categories.routes').then(m => m.CATEGORIES_ROUTES),
+        title: 'Categorias — Edifiq',
+      },
+      {
+        path: 'roles',
+        loadChildren: () =>
+          import('./features/roles/roles.routes').then(m => m.ROLES_ROUTES),
+        title: 'Perfis de Acesso — Edifiq',
+      },
+      {
         path: 'my-reputation',
         loadChildren: () =>
           import('./features/my-reputation/my-reputation.routes').then(

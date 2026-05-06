@@ -1,9 +1,20 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../../../environments/environment';
 
 export interface AuthUser {
-  id:    string;
-  name:  string;
-  email: string;
+  id:            string;
+  fullName:      string;
+  email:         string;
+  emailVerified: boolean;
+  avatarUrl:     string | null;
+  phone:         string | null;
+  tenant: {
+    id:   string;
+    name: string;
+    slug: string;
+  };
 }
 
 export interface LoginPayload {
@@ -12,38 +23,76 @@ export interface LoginPayload {
 }
 
 export interface RegisterPayload {
-  name:     string;
-  email:    string;
-  password: string;
+  tenantName: string;
+  name:       string;
+  email:      string;
+  password:   string;
 }
 
-export type AuthStep = 'login' | 'register' | 'confirm-email';
-
-export interface AuthToken {
-  accessToken:  string;
-  refreshToken: string;
+interface AuthResponse {
+  tokenType:   string;
+  accessToken: string;
+  expiresAt:   string;
+  userId:      string;
+  tenantId:    string;
+  user:        AuthUser;
 }
 
-/**
- * AuthService — gerencia estado de autenticação via signals.
- * Em produção, substituir os métodos por chamadas HTTP reais.
- */
+interface MeResponse {
+  user:       AuthUser;
+  email:      string;
+  tenantId:   string;
+  tenantSlug: string;
+}
+
+const TOKEN_KEY = 'edq_token';
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  /* ── State ──────────────────────────────────────────────── */
-  private readonly _user          = signal<AuthUser | null>(null);
-  private readonly _isLoading     = signal(false);
-  private readonly _error         = signal<string | null>(null);
-  private readonly _pendingEmail  = signal<string | null>(null);
-  private readonly _token         = signal<string | null>(null);
+  private readonly http = inject(HttpClient);
+  private readonly base = `${environment.apiUrl}/v1`;
 
-  /* ── Public readonly signals ────────────────────────────── */
+  /* ── State ──────────────────────────────────────────────── */
+  private readonly _user         = signal<AuthUser | null>(null);
+  private readonly _isLoading    = signal(false);
+  private readonly _error        = signal<string | null>(null);
+  private readonly _pendingEmail = signal<string | null>(null);
+  private readonly _token        = signal<string | null>(null);
+  private readonly _initialized  = signal(false);
+
+  /* ── Public signals ─────────────────────────────────────── */
   readonly user         = this._user.asReadonly();
   readonly isLoading    = this._isLoading.asReadonly();
   readonly error        = this._error.asReadonly();
   readonly pendingEmail = this._pendingEmail.asReadonly();
   readonly token        = this._token.asReadonly();
+  readonly initialized  = this._initialized.asReadonly();
   readonly isLoggedIn   = computed(() => this._user() !== null);
+
+  /* ── Init — chamado via APP_INITIALIZER no boot ─────────── */
+  async init(): Promise<void> {
+    const stored = localStorage.getItem(TOKEN_KEY);
+
+    if (!stored) {
+      this._initialized.set(true);
+      return;
+    }
+
+    // Coloca o token em memória para o interceptor incluí-lo na chamada /me
+    this._token.set(stored);
+
+    try {
+      const res = await firstValueFrom(
+        this.http.get<MeResponse>(`${this.base}/me`),
+      );
+      this._user.set(res.user);
+    } catch {
+      // Token expirado ou inválido — limpa tudo silenciosamente
+      this._clearSession();
+    } finally {
+      this._initialized.set(true);
+    }
+  }
 
   /* ── Login ──────────────────────────────────────────────── */
   async login(payload: LoginPayload): Promise<boolean> {
@@ -51,24 +100,18 @@ export class AuthService {
     this._error.set(null);
 
     try {
-      // Simula chamada de API (substituir por HttpClient)
-      await this.simulateDelay(1200);
+      const res = await firstValueFrom(
+        this.http.post<AuthResponse>(`${this.base}/auth/login`, payload),
+      );
 
-      if (payload.email === 'erro@teste.com') {
-        throw new Error('E-mail ou senha incorretos. Tente novamente.');
-      }
-
-      this._user.set({
-        id:    'usr_01',
-        name:  'João Melo',
-        email: payload.email,
-      });
-      this._token.set('mock-jwt-token-usr-01');
-
+      this._setSession(res.user, res.accessToken);
       return true;
+
     } catch (err) {
-      this._error.set(err instanceof Error ? err.message : 'Erro inesperado.');
+      console.error('[AuthService] login error:', err);
+      this._error.set('E-mail ou senha incorretos. Tente novamente.');
       return false;
+
     } finally {
       this._isLoading.set(false);
     }
@@ -80,61 +123,52 @@ export class AuthService {
     this._error.set(null);
 
     try {
-      await this.simulateDelay(1400);
+      const res = await firstValueFrom(
+        this.http.post<AuthResponse>(`${this.base}/auth/register`, payload),
+      );
 
-      if (payload.email === 'existente@teste.com') {
-        throw new Error('Este e-mail já está cadastrado.');
-      }
-
+      this._setSession(res.user, res.accessToken);
       this._pendingEmail.set(payload.email);
       return true;
-    } catch (err) {
-      this._error.set(err instanceof Error ? err.message : 'Erro inesperado.');
+
+    } catch (err: any) {
+      this._error.set(
+        err?.error?.message ?? 'Erro ao criar conta. Tente novamente.',
+      );
       return false;
+
     } finally {
       this._isLoading.set(false);
     }
   }
 
-  /* ── Confirm Email ──────────────────────────────────────── */
-  async confirmEmail(code: string): Promise<boolean> {
+  /* ── Resend verification link ───────────────────────────── */
+  async resendVerificationLink(): Promise<boolean> {
     this._isLoading.set(true);
     this._error.set(null);
 
     try {
-      await this.simulateDelay(1000);
-
-      if (code !== '123456') {
-        throw new Error('Código inválido. Verifique seu e-mail e tente novamente.');
-      }
-
-      const email = this._pendingEmail();
-      this._user.set({
-        id:    'usr_02',
-        name:  'Novo Usuário',
-        email: email ?? '',
-      });
-      this._pendingEmail.set(null);
+      await firstValueFrom(
+        this.http.post(`${this.base}/auth/resend-verification`, {
+          email: this._pendingEmail() ?? this._user()?.email,
+        }),
+      );
       return true;
-    } catch (err) {
-      this._error.set(err instanceof Error ? err.message : 'Erro inesperado.');
+    } catch {
       return false;
     } finally {
       this._isLoading.set(false);
     }
   }
 
-  /* ── Resend Code ────────────────────────────────────────── */
-  async resendCode(): Promise<void> {
-    this._isLoading.set(true);
-    await this.simulateDelay(800);
-    this._isLoading.set(false);
+  /* ── Dismiss pending email ──────────────────────────────── */
+  dismissEmailVerification(): void {
+    this._pendingEmail.set(null);
   }
 
   /* ── Logout ─────────────────────────────────────────────── */
   logout(): void {
-    this._user.set(null);
-    this._token.set(null);
+    this._clearSession();
     this._pendingEmail.set(null);
     this._error.set(null);
   }
@@ -143,7 +177,16 @@ export class AuthService {
     this._error.set(null);
   }
 
-  private simulateDelay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  /* ── Helpers privados ───────────────────────────────────── */
+  private _setSession(user: AuthUser, token: string): void {
+    localStorage.setItem(TOKEN_KEY, token);
+    this._token.set(token);
+    this._user.set(user);
+  }
+
+  private _clearSession(): void {
+    localStorage.removeItem(TOKEN_KEY);
+    this._token.set(null);
+    this._user.set(null);
   }
 }

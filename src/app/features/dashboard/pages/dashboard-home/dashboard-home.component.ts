@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
@@ -11,35 +13,9 @@ import { PageHeaderComponent }  from '../../../../shared/components/page-header/
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
 import { MapComponent, MapMarker } from '../../../../shared/components/map/map.component';
-import { OrderStatus, ProposalStatus } from '../../../../shared/types/domain.types';
-
-export interface DashboardOrder {
-  id:             string;
-  reference_code: string;
-  status:         OrderStatus;
-  is_urgent:      boolean;
-  delivery_city:  string;
-  delivery_state: string;
-  delivery_address: string;
-  proposal_count: number;
-  created_at:     string;
-  lat:            number;
-  lng:            number;
-  items_summary:  string;
-  items:          { description: string; quantity: string; unit: string }[];
-  buyer_name:     string;
-  buyer_initials: string;
-  auction_ends_at?: string;
-}
-
-interface DashboardProposal {
-  id:           string;
-  order_id:     string;
-  status:       ProposalStatus;
-  total_price:  number;
-  supplierName: string;
-  submitted_at: string;
-}
+import { Order, OrderStatus, Proposal } from '../../../../shared/types/domain.types';
+import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
+import { ProposalsApiService }  from '../../../../core/services/api/proposals-api.service';
 
 const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
   draft:      '#9CA3AF',
@@ -132,15 +108,15 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
         <!-- Cards grid estilo Instagram -->
         <div class="ig-feed">
           @for (order of filteredOrders(); track order.id) {
-            <article class="ig-card" [class.ig-card--urgent]="order.is_urgent">
+            <article class="ig-card" [class.ig-card--urgent]="order.isUrgent">
 
               <!-- ── Banner: mini-mapa da localização ─────────── -->
-              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" aria-label="Ver pedido {{ order.reference_code }}">
+              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" aria-label="Ver pedido {{ order.referenceCode }}">
 
                 <!-- Mapa estático como "foto" do post -->
                 <edq-map
-                  [lat]="order.lat"
-                  [lng]="order.lng"
+                  [lat]="order.deliveryLat ?? -23.5505"
+                  [lng]="order.deliveryLng ?? -46.6333"
                   [height]="200"
                   [zoom]="13"
                   [config]="{
@@ -166,7 +142,7 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                 <!-- Badge de status flutuante (canto superior direito) -->
                 <div class="ig-card__status-float">
                   <edq-status-badge [status]="order.status" />
-                  @if (order.is_urgent) {
+                  @if (order.isUrgent) {
                     <span class="urgent-pill">🔥 URGENTE</span>
                   }
                 </div>
@@ -175,8 +151,8 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                 <div class="ig-card__location-float">
                   <span class="location-pin">📍</span>
                   <div class="location-text">
-                    <span class="location-city">{{ order.delivery_city }}, {{ order.delivery_state }}</span>
-                    <span class="location-address">{{ order.delivery_address }}</span>
+                    <span class="location-city">{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
+                    <span class="location-address">{{ order.deliveryAddress }}</span>
                   </div>
                 </div>
 
@@ -196,7 +172,7 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                 <!-- Status + timer visíveis apenas no mobile (os do banner ficam ocultos) -->
                 <div class="ig-card__mobile-meta">
                   <edq-status-badge [status]="order.status" />
-                  @if (order.is_urgent) {
+                  @if (order.isUrgent) {
                     <span class="badge-urgent-sm">URGENTE</span>
                   }
                   @if (order.status === 'in_auction') {
@@ -207,31 +183,31 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                 <!-- Localização visível apenas no mobile -->
                 <div class="ig-card__mobile-location">
                   <span>📍</span>
-                  <span>{{ order.delivery_city }}, {{ order.delivery_state }}</span>
+                  <span>{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
                 </div>
 
                 <!-- Linha do autor (como o perfil no Instagram) -->
                 <div class="ig-card__author">
                   <div class="author-avatar" [style.background]="statusColor(order.status)">
-                    {{ order.buyer_initials }}
+                    {{ order.referenceCode?.slice(-2) }}
                   </div>
                   <div class="author-info">
-                    <span class="author-name">{{ order.buyer_name }}</span>
-                    <span class="author-time">{{ order.created_at | date:'dd/MM/yyyy · HH:mm' }}</span>
+                    <span class="author-name">{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
+                    <span class="author-time">{{ order.createdAt | date:'dd/MM/yyyy · HH:mm' }}</span>
                   </div>
-                  <span class="ig-card__ref">{{ order.reference_code }}</span>
+                  <span class="ig-card__ref">{{ order.referenceCode }}</span>
                 </div>
 
                 <!-- Itens do pedido (como a legenda do post) -->
                 <div class="ig-card__items">
-                  @for (item of order.items.slice(0, 3); track item.description) {
+                  @for (item of (order.items ?? []).slice(0, 3); track item.id) {
                     <span class="item-chip">
-                      <span class="item-chip__qty">{{ item.quantity }}{{ item.unit }}</span>
+                      <span class="item-chip__qty">{{ item.quantity }} {{ item.unit }}</span>
                       {{ item.description }}
                     </span>
                   }
-                  @if (order.items.length > 3) {
-                    <span class="item-chip item-chip--more">+{{ order.items.length - 3 }} itens</span>
+                  @if ((order.items?.length ?? 0) > 3) {
+                    <span class="item-chip item-chip--more">+{{ (order.items?.length ?? 0) - 3 }} itens</span>
                   }
                 </div>
 
@@ -239,10 +215,10 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                 <div class="ig-card__actions">
                   <div class="ig-card__actions-left">
                     <!-- Propostas (como curtidas) -->
-                    <button class="ig-action" [class.ig-action--active]="order.proposal_count > 0">
+                    <button class="ig-action" [class.ig-action--active]="(order.proposalCount ?? 0) > 0">
                       <span class="ig-action__icon">💬</span>
-                      <span class="ig-action__count">{{ order.proposal_count }}</span>
-                      <span class="ig-action__label">proposta{{ order.proposal_count !== 1 ? 's' : '' }}</span>
+                      <span class="ig-action__count">{{ order.proposalCount }}</span>
+                      <span class="ig-action__label">proposta{{ order.proposalCount !== 1 ? 's' : '' }}</span>
                     </button>
                   </div>
 
@@ -304,17 +280,17 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
             @for (p of recentProposals(); track p.id) {
               <div class="proposal-row">
                 <div class="proposal-row__avatar">
-                  {{ p.supplierName.slice(0, 2).toUpperCase() }}
+                  {{ p.supplier?.companyName?.slice(0, 2)?.toUpperCase() ?? '??' }}
                 </div>
                 <div class="proposal-row__info">
-                  <span class="proposal-row__name">{{ p.supplierName }}</span>
+                  <span class="proposal-row__name">{{ p.supplier?.companyName ?? 'Fornecedor' }}</span>
                   <span class="proposal-row__meta">
-                    Pedido #{{ p.order_id.slice(-4) }} · {{ p.submitted_at | date:'dd/MM HH:mm' }}
+                    Pedido #{{ p.orderId.slice(-4) }} · {{ p.submittedAt | date:'dd/MM HH:mm' }}
                   </span>
                 </div>
                 <div class="proposal-row__right">
                   <span class="proposal-row__price">
-                    {{ p.total_price | currency:'BRL':'symbol':'1.2-2' }}
+                    {{ p.totalPrice | currency:'BRL':'symbol':'1.2-2' }}
                   </span>
                   <edq-status-badge [status]="p.status" />
                 </div>
@@ -328,8 +304,15 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
   `,
   styleUrl: './dashboard-home.component.scss',
 })
-export class DashboardHomeComponent {
+export class DashboardHomeComponent implements OnInit {
   protected readonly activeFilter = signal<OrderStatus | 'all'>('all');
+
+  private readonly ordersApi     = inject(OrdersApiService);
+  private readonly proposalsApi  = inject(ProposalsApiService);
+
+  protected readonly orders           = signal<Order[] >([]);
+  protected readonly recentProposals  = signal<Proposal[]>([]);
+  protected readonly isLoading        = signal(false);
 
   protected readonly feedFilters = [
     { value: 'all'        as const, label: 'Todos',       dot: 'gray'   },
@@ -338,126 +321,34 @@ export class DashboardHomeComponent {
     { value: 'confirmed'  as const, label: 'Confirmados', dot: 'green'  },
   ];
 
-  protected readonly allOrders = signal<DashboardOrder[]>([
-    {
-      id: '1', reference_code: '#EDQ-0042',
-      status: 'in_auction', is_urgent: true,
-      delivery_city: 'Indaiatuba', delivery_state: 'SP',
-      delivery_address: 'Av. Eng. Fábio Roberto Barnabé, 3950',
-      proposal_count: 3,
-      created_at: '2024-01-15T10:00:00Z',
-      lat: -23.0896, lng: -47.2189,
-      items_summary: '20 sacos cimento CP-II, 5m³ areia, 500 blocos',
-      items: [
-        { description: 'Cimento CP-II 50kg', quantity: '20', unit: ' sacos' },
-        { description: 'Areia média lavada',  quantity: '5',  unit: 'm³' },
-        { description: 'Bloco cerâmico 9x19', quantity: '500', unit: ' un' },
-      ],
-      buyer_name: 'João Melo', buyer_initials: 'JM',
-    },
-    {
-      id: '2', reference_code: '#EDQ-0041',
-      status: 'open', is_urgent: false,
-      delivery_city: 'Campinas', delivery_state: 'SP',
-      delivery_address: 'R. Irmã Serafina, 1010 — Cambuí',
-      proposal_count: 0,
-      created_at: '2024-01-14T09:00:00Z',
-      lat: -22.9056, lng: -47.0608,
-      items_summary: '100m² piso cerâmico, argamassa',
-      items: [
-        { description: 'Piso cerâmico 60x60', quantity: '100', unit: 'm²' },
-        { description: 'Argamassa AC-II',      quantity: '20',  unit: ' sacos' },
-      ],
-      buyer_name: 'Ana Souza', buyer_initials: 'AS',
-    },
-    {
-      id: '3', reference_code: '#EDQ-0040',
-      status: 'confirmed', is_urgent: false,
-      delivery_city: 'São Paulo', delivery_state: 'SP',
-      delivery_address: 'R. Augusta, 2345 — Consolação',
-      proposal_count: 5,
-      created_at: '2024-01-13T08:00:00Z',
-      lat: -23.5505, lng: -46.6333,
-      items_summary: 'Ferragens estruturais, 50kg vergalhão',
-      items: [
-        { description: 'Vergalhão CA-50 10mm', quantity: '50',  unit: 'kg' },
-        { description: 'Arame recozido',        quantity: '5',   unit: 'kg' },
-        { description: 'Espaçador plástico',    quantity: '200', unit: ' un' },
-      ],
-      buyer_name: 'Carlos Lima', buyer_initials: 'CL',
-    },
-    {
-      id: '4', reference_code: '#EDQ-0039',
-      status: 'selected', is_urgent: true,
-      delivery_city: 'Sorocaba', delivery_state: 'SP',
-      delivery_address: 'Av. Itavuvu, 11777 — Jd. Vera Cruz',
-      proposal_count: 4,
-      created_at: '2024-01-12T07:00:00Z',
-      lat: -23.5015, lng: -47.4526,
-      items_summary: 'Tintas, massa corrida, 20L solvente',
-      items: [
-        { description: 'Tinta acrílica branca', quantity: '18', unit: 'L' },
-        { description: 'Massa corrida PVA',      quantity: '4',  unit: ' galões' },
-        { description: 'Solvente universal',     quantity: '20', unit: 'L' },
-      ],
-      buyer_name: 'Ricardo Alves', buyer_initials: 'RA',
-    },
-    {
-      id: '5', reference_code: '#EDQ-0038',
-      status: 'open', is_urgent: false,
-      delivery_city: 'Ribeirão Preto', delivery_state: 'SP',
-      delivery_address: 'Av. Presidente Vargas, 3201',
-      proposal_count: 1,
-      created_at: '2024-01-11T06:00:00Z',
-      lat: -21.1775, lng: -47.8103,
-      items_summary: 'Tubos PVC 100mm, conexões hidráulicas',
-      items: [
-        { description: 'Tubo PVC 100mm 6m', quantity: '20', unit: ' barras' },
-        { description: 'Joelho 90° PVC',    quantity: '15', unit: ' un' },
-        { description: 'Luva simples PVC',  quantity: '10', unit: ' un' },
-      ],
-      buyer_name: 'Fernanda Costa', buyer_initials: 'FC',
-    },
-    {
-      id: '6', reference_code: '#EDQ-0037',
-      status: 'in_auction', is_urgent: false,
-      delivery_city: 'Santos', delivery_state: 'SP',
-      delivery_address: 'Av. Ana Costa, 555 — Vila Mathias',
-      proposal_count: 2,
-      created_at: '2024-01-10T05:00:00Z',
-      lat: -23.9608, lng: -46.3336,
-      items_summary: 'Madeira pinus 3x3, compensado 18mm',
-      items: [
-        { description: 'Madeira pinus 3x3 3m', quantity: '50', unit: ' peças' },
-        { description: 'Compensado 18mm',       quantity: '10', unit: ' chapas' },
-      ],
-      buyer_name: 'Marcos Vieira', buyer_initials: 'MV',
-    },
-  ]);
+  ngOnInit(): void {
+    this.isLoading.set(true);
+    this.ordersApi.list({ perPage: 20 }).subscribe({
+      next:  res => { this.orders.set(res.data); this.isLoading.set(false); },
+      error: ()  => this.isLoading.set(false),
+    });
+  }
 
   protected readonly filteredOrders = computed(() => {
     const f = this.activeFilter();
-    if (f === 'all') return this.allOrders();
-    return this.allOrders().filter(o => o.status === f);
+    if (f === 'all') return this.orders();
+    return this.orders().filter(o => o.status === f);
   });
 
   protected readonly mapMarkers = computed<MapMarker[]>(() =>
-    this.allOrders().map(o => ({
-      lat:   o.lat,
-      lng:   o.lng,
-      label: o.reference_code,
-      color: MAP_MARKER_COLOR[o.status],
-      popup: `${o.delivery_city}, ${o.delivery_state}<br>${o.items_summary}`,
-    }))
+    this.orders()
+      .filter((o): o is Order & { deliveryLat: number; deliveryLng: number } =>
+        o.deliveryLat != null && o.deliveryLng != null
+      )
+      .map(o => ({
+        lat:   o.deliveryLat,
+        lng:   o.deliveryLng,
+        label: o.referenceCode ?? o.id,
+        color: MAP_MARKER_COLOR[o.status],
+        popup: `${o.deliveryCity ?? ''}, ${o.deliveryState ?? ''}`,
+      }))
   );
 
-  protected readonly recentProposals = signal<DashboardProposal[]>([
-    { id: 'p1', order_id: '0042', status: 'submitted', total_price: 1250.00, supplierName: 'Depósito Central Ltda', submitted_at: '2024-01-15T10:30:00Z' },
-    { id: 'p2', order_id: '0042', status: 'submitted', total_price: 1380.00, supplierName: 'Materiais São Paulo',   submitted_at: '2024-01-15T10:45:00Z' },
-    { id: 'p3', order_id: '0041', status: 'accepted',  total_price: 890.50,  supplierName: 'Construfácil',          submitted_at: '2024-01-14T11:00:00Z' },
-  ]);
-
-  /** Retorna a cor hex do status para o marcador do mapa */
   protected statusColor(status: OrderStatus): string {
     return STATUS_COLOR_MAP[status];
   }

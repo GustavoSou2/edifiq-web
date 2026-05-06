@@ -1,12 +1,16 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ToastContainerComponent } from './shared/components/toast/toast-container.component';
 
 @Component({
   selector:    'app-root',
   standalone:  true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports:     [RouterOutlet],
-  template:    `<router-outlet />`,
-  styles:      [':host { display: block; }'],
+  imports:     [RouterOutlet, ToastContainerComponent],
+  template: `
+    <router-outlet />
+    <edq-toast-container />
+  `,
+  styles: [':host { display: block; }'],
 })
 export class App {}

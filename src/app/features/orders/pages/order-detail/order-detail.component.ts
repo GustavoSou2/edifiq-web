@@ -10,26 +10,25 @@ import { RouterLink } from '@angular/router';
 import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
-import { MapComponent, MapMarker } from '../../../../shared/components/map/map.component';
-import { MapConfig } from '../../../../shared/components/map/map.types';
-import { OrderStatus } from '../../../../shared/types/domain.types';
+import { MapComponent }         from '../../../../shared/components/map/map.component';
+import { MapConfig }            from '../../../../shared/components/map/map.types';
+import { OrderStatus }          from '../../../../shared/types/domain.types';
 
 type DetailTab = 'items' | 'proposals' | 'distribution' | 'history';
 
-/* Configuração do banner de mapa — interativo mas sem controles excessivos */
 const BANNER_MAP_CONFIG: MapConfig = {
-  zoomControl:      true,
-  dragging:         true,
-  scrollWheelZoom:  false,   /* evita scroll acidental na página */
-  doubleClickZoom:  true,
-  touchZoom:        true,
-  keyboard:         false,
-  attribution:      false,
-  tileStyle:        'positron',
-  fitBounds:        false,
-  markerSize:       34,
-  markerTail:       true,
-  borderRadius:     '0',
+  zoomControl:     true,
+  dragging:        true,
+  scrollWheelZoom: false,
+  doubleClickZoom: true,
+  touchZoom:       true,
+  keyboard:        false,
+  attribution:     false,
+  tileStyle:       'positron',
+  fitBounds:       false,
+  markerSize:      34,
+  markerTail:      true,
+  borderRadius:    '0',
 };
 
 const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
@@ -51,27 +50,26 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
     <!-- ── Banner de mapa ─────────────────────────────────── -->
     <div class="map-banner">
       <edq-map
-        [lat]="order().lat"
-        [lng]="order().lng"
+        [lat]="order().deliveryLat ?? -23.5505"
+        [lng]="order().deliveryLng ?? -46.6333"
         [height]="400"
         [zoom]="15"
         [config]="bannerConfig()"
-        ariaLabel="Localização da obra — {{ order().delivery_address }}"
+        [ariaLabel]="'Localização da obra — ' + order().deliveryAddress"
       />
 
-      <!-- Overlay com informações sobre o banner -->
       <div class="map-banner__overlay">
         <div class="map-banner__info">
           <div class="map-banner__location">
             <span class="map-banner__pin">📍</span>
             <div>
-              <span class="map-banner__city">{{ order().delivery_city }}, {{ order().delivery_state }}</span>
-              <span class="map-banner__address">{{ order().delivery_address }}</span>
+              <span class="map-banner__city">{{ order().deliveryCity }}, {{ order().deliveryState }}</span>
+              <span class="map-banner__address">{{ order().deliveryAddress }}</span>
             </div>
           </div>
           <div class="map-banner__badges">
             <edq-status-badge [status]="order().status" />
-            @if (order().is_urgent) {
+            @if (order().isUrgent) {
               <span class="urgent-pill">🔥 URGENTE</span>
             }
             @if (order().status === 'in_auction') {
@@ -85,8 +83,8 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
     <!-- ── Page header ────────────────────────────────────── -->
     <div class="detail-content">
       <edq-page-header
-        [title]="order().reference_code"
-        [subtitle]="'Criado em ' + order().created_at + ' por ' + order().buyer_name"
+        [title]="order().referenceCode ?? order().id"
+        [subtitle]="'Criado em ' + order().createdAt"
       >
         <edq-button slot="actions" variant="secondary" size="sm" routerLink="../">
           ← Voltar
@@ -106,7 +104,7 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
         </div>
         <div class="info-card">
           <span class="info-card__label">Urgência</span>
-          @if (order().is_urgent) {
+          @if (order().isUrgent) {
             <span class="badge-urgent">URGENTE</span>
           } @else {
             <span class="info-card__value">Normal</span>
@@ -114,21 +112,21 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
         </div>
         <div class="info-card">
           <span class="info-card__label">Cidade</span>
-          <span class="info-card__value">{{ order().delivery_city }}, {{ order().delivery_state }}</span>
+          <span class="info-card__value">{{ order().deliveryCity }}, {{ order().deliveryState }}</span>
         </div>
         <div class="info-card">
           <span class="info-card__label">Duração do Leilão</span>
-          <span class="info-card__value">{{ order().auction_duration_min }} min</span>
+          <span class="info-card__value">{{ order().auctionDurationMin }} min</span>
         </div>
         <div class="info-card">
           <span class="info-card__label">Propostas</span>
           <span class="info-card__value info-card__value--highlight">
-            {{ order().proposal_count }} recebida{{ order().proposal_count !== 1 ? 's' : '' }}
+            {{ order().proposalCount ?? 0 }} recebida{{ (order().proposalCount ?? 0) !== 1 ? 's' : '' }}
           </span>
         </div>
         <div class="info-card">
           <span class="info-card__label">Fornecedores</span>
-          <span class="info-card__value">Até {{ order().max_suppliers }}</span>
+          <span class="info-card__value">Até {{ order().maxSuppliers }}</span>
         </div>
       </div>
 
@@ -168,11 +166,11 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
                   </tr>
                 </thead>
                 <tbody>
-                  @for (item of order().items; track item.description; let i = $index) {
+                  @for (item of order().items ?? []; track item.id; let i = $index) {
                     <tr>
                       <td class="mono">{{ i + 1 }}</td>
                       <td>{{ item.description }}</td>
-                      <td><span class="category-chip">{{ item.category }}</span></td>
+                      <td><span class="category-chip">{{ item.category?.name ?? '—' }}</span></td>
                       <td class="mono">{{ item.quantity }}</td>
                       <td class="mono">{{ item.unit }}</td>
                     </tr>
@@ -185,7 +183,7 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
           @case ('proposals') {
             <div class="tab-placeholder">
               <span class="tab-placeholder__icon">💬</span>
-              <p>{{ order().proposal_count }} propostas recebidas.</p>
+              <p>{{ order().proposalCount ?? 0 }} propostas recebidas.</p>
               <a routerLink="proposals" class="tab-link">Ver comparativo completo →</a>
             </div>
           }
@@ -193,21 +191,14 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
           @case ('distribution') {
             <div class="tab-placeholder">
               <span class="tab-placeholder__icon">📡</span>
-              <p>{{ order().notified_suppliers }} fornecedores notificados.</p>
+              <p>Fornecedores notificados para este pedido.</p>
             </div>
           }
 
           @case ('history') {
-            <div class="history-timeline">
-              @for (event of order().history; track event.time) {
-                <div class="timeline-item">
-                  <div class="timeline-dot" [class.timeline-dot--primary]="$first"></div>
-                  <div class="timeline-content">
-                    <span class="timeline-action">{{ event.action }}</span>
-                    <span class="timeline-time">{{ event.time }}</span>
-                  </div>
-                </div>
-              }
+            <div class="tab-placeholder">
+              <span class="tab-placeholder__icon">🕐</span>
+              <p>Histórico de eventos do pedido.</p>
             </div>
           }
 
@@ -223,41 +214,30 @@ export class OrderDetailComponent {
   protected readonly activeTab = signal<DetailTab>('items');
 
   protected readonly tabs: { id: DetailTab; label: string; count?: number }[] = [
-    { id: 'items',        label: 'Itens',                   count: 3 },
-    { id: 'proposals',    label: 'Propostas',               count: 3 },
-    { id: 'distribution', label: 'Fornecedores Convidados', count: 5 },
+    { id: 'items',        label: 'Itens' },
+    { id: 'proposals',    label: 'Propostas' },
+    { id: 'distribution', label: 'Fornecedores Convidados' },
     { id: 'history',      label: 'Histórico' },
   ];
 
-  /* Mock — substituir por service call usando this.id() */
+  /* TODO: substituir por OrdersApiService.findById(this.id()) */
   protected readonly order = signal({
-    reference_code:       '#EDQ-2024-0042',
-    status:               'in_auction' as OrderStatus,
-    is_urgent:            true,
-    delivery_city:        'Indaiatuba',
-    delivery_state:       'SP',
-    delivery_address:     'Av. Eng. Fábio Roberto Barnabé, 3950 — Jardim Morada do Sol',
-    auction_duration_min: 60,
-    max_suppliers:        5,
-    proposal_count:       3,
-    notified_suppliers:   5,
-    created_at:           '15/01/2024 às 10:00',
-    buyer_name:           'João Melo',
-    lat:                  -23.0896,
-    lng:                  -47.2189,
-    items: [
-      { description: 'Saco de Cimento CP-II 50kg', category: 'Cimento',   quantity: '20',  unit: 'saco' },
-      { description: 'Areia média lavada',          category: 'Agregados', quantity: '5',   unit: 'm³'   },
-      { description: 'Bloco cerâmico 9x19x19',      category: 'Alvenaria', quantity: '500', unit: 'un'   },
-    ],
-    history: [
-      { action: 'Leilão iniciado',           time: '15/01/2024 10:00' },
-      { action: 'Pedido publicado',          time: '15/01/2024 09:55' },
-      { action: 'Pedido criado por João Melo', time: '15/01/2024 09:50' },
-    ],
+    id:                 '1',
+    referenceCode:      '#EDQ-2024-0042' as string | null,
+    status:             'in_auction' as OrderStatus,
+    isUrgent:           true,
+    deliveryCity:       'Indaiatuba' as string | null,
+    deliveryState:      'SP' as string | null,
+    deliveryAddress:    'Av. Eng. Fábio Roberto Barnabé, 3950 — Jardim Morada do Sol',
+    deliveryLat:        -23.0896 as number | null,
+    deliveryLng:        -47.2189 as number | null,
+    auctionDurationMin: 60,
+    maxSuppliers:       5,
+    proposalCount:      3 as number | undefined,
+    createdAt:          '2024-01-15T10:00:00Z',
+    items:              [] as { id: string; description: string; category?: { name: string } | null; quantity: number; unit: string }[],
   });
 
-  /** Config do banner: interativo mas sem scroll-zoom para não atrapalhar a página */
   protected readonly bannerConfig = computed<MapConfig>(() => ({
     ...BANNER_MAP_CONFIG,
     markerColor: STATUS_COLOR_MAP[this.order().status],

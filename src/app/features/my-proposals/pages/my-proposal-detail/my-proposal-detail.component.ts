@@ -12,32 +12,30 @@ import { ButtonComponent }      from '../../../../shared/components/button/butto
 import { ProposalStatus }       from '../../../../shared/types/domain.types';
 
 interface ProposalDetail {
-  id:            string;
-  order_ref:     string;
-  buyer_name:    string;
-  delivery_city: string;
-  delivery_address: string;
-  total_price:   number;
-  delivery_days: number;
-  status:        ProposalStatus;
-  submitted_at:  string;
-  expires_at?:   string;
-  notes?:        string;
+  id:              string;
+  orderId:         string;
+  deliveryCity:    string;
+  deliveryAddress: string;
+  totalPrice:      number;
+  deliveryMin:     number;
+  status:          ProposalStatus;
+  submittedAt:     string;
+  expiresAt?:      string | null;
+  notes?:          string | null;
   items: { description: string; quantity: string; unit: string }[];
 }
 
 const MOCK_PROPOSAL: ProposalDetail = {
-  id:            'p1',
-  order_ref:     '#EDQ-2024-0042',
-  buyer_name:    'Construtora Alpha',
-  delivery_city: 'Indaiatuba',
-  delivery_address: 'Rua das Palmeiras, 500 — Indaiatuba, SP',
-  total_price:   4800,
-  delivery_days: 2,
-  status:        'submitted',
-  submitted_at:  '2024-01-15T10:00:00Z',
-  expires_at:    '2024-01-16T18:00:00Z',
-  notes:         'Entrega disponível no período da manhã. Frete incluso no valor.',
+  id:              'p1',
+  orderId:         '#EDQ-2024-0042',
+  deliveryCity:    'Indaiatuba',
+  deliveryAddress: 'Rua das Palmeiras, 500 — Indaiatuba, SP',
+  totalPrice:      4800,
+  deliveryMin:     2880,
+  status:          'submitted',
+  submittedAt:     '2024-01-15T10:00:00Z',
+  expiresAt:       '2024-01-16T18:00:00Z',
+  notes:           'Entrega disponível no período da manhã. Frete incluso no valor.',
   items: [
     { description: 'Cimento CP-II',   quantity: '50',  unit: 'sacos' },
     { description: 'Areia média',     quantity: '10',  unit: 'm³' },
@@ -53,7 +51,7 @@ const MOCK_PROPOSAL: ProposalDetail = {
   imports: [RouterLink, CurrencyPipe, DatePipe, PageHeaderComponent, StatusBadgeComponent, ButtonComponent],
   template: `
     <edq-page-header
-      [title]="proposal.order_ref"
+      [title]="proposal.orderId"
       subtitle="Detalhes da proposta enviada"
     >
       <edq-button slot="actions" variant="ghost" size="sm" routerLink="/app/my-proposals">
@@ -63,37 +61,34 @@ const MOCK_PROPOSAL: ProposalDetail = {
 
     <div class="detail-layout">
 
-      <!-- ── Coluna Principal ─────────────────────────────── -->
       <div class="detail-main">
 
-        <!-- Status da proposta -->
         <div class="status-banner" [class]="'status-banner--' + proposal.status">
           <edq-status-badge [status]="proposal.status" />
           <span class="status-banner__text">{{ statusMessage() }}</span>
         </div>
 
-        <!-- Dados da proposta -->
         <div class="detail-card">
           <h2 class="detail-card__title">Sua Proposta</h2>
           <div class="info-grid">
             <div class="info-item">
               <span class="info-item__label">Valor Total</span>
               <span class="info-item__value info-item__value--price">
-                {{ proposal.total_price | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
+                {{ proposal.totalPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
               </span>
             </div>
             <div class="info-item">
               <span class="info-item__label">Prazo de Entrega</span>
-              <span class="info-item__value">{{ proposal.delivery_days }} dia{{ proposal.delivery_days !== 1 ? 's' : '' }}</span>
+              <span class="info-item__value">{{ proposal.deliveryMin }} min</span>
             </div>
             <div class="info-item">
               <span class="info-item__label">Enviada em</span>
-              <span class="info-item__value">{{ proposal.submitted_at | date:'dd/MM/yyyy HH:mm' }}</span>
+              <span class="info-item__value">{{ proposal.submittedAt | date:'dd/MM/yyyy HH:mm' }}</span>
             </div>
-            @if (proposal.expires_at) {
+            @if (proposal.expiresAt) {
               <div class="info-item">
                 <span class="info-item__label">Expira em</span>
-                <span class="info-item__value">{{ proposal.expires_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                <span class="info-item__value">{{ proposal.expiresAt | date:'dd/MM/yyyy HH:mm' }}</span>
               </div>
             }
             @if (proposal.notes) {
@@ -105,17 +100,16 @@ const MOCK_PROPOSAL: ProposalDetail = {
           </div>
         </div>
 
-        <!-- Pedido relacionado -->
         <div class="detail-card">
           <h2 class="detail-card__title">Pedido Relacionado</h2>
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-item__label">Comprador</span>
-              <span class="info-item__value">{{ proposal.buyer_name }}</span>
+              <span class="info-item__label">Local de Entrega</span>
+              <span class="info-item__value">📍 {{ proposal.deliveryAddress }}</span>
             </div>
             <div class="info-item">
-              <span class="info-item__label">Local de Entrega</span>
-              <span class="info-item__value">📍 {{ proposal.delivery_address }}</span>
+              <span class="info-item__label">Cidade</span>
+              <span class="info-item__value">{{ proposal.deliveryCity }}</span>
             </div>
           </div>
 
@@ -142,7 +136,6 @@ const MOCK_PROPOSAL: ProposalDetail = {
         </div>
       </div>
 
-      <!-- ── Coluna Lateral ───────────────────────────────── -->
       <aside class="detail-aside">
         <div class="action-card">
           <h3 class="action-card__title">Ações</h3>
@@ -154,16 +147,12 @@ const MOCK_PROPOSAL: ProposalDetail = {
 
           @if (proposal.status === 'accepted') {
             <p class="action-card__hint success">🎉 Sua proposta foi aceita! Prepare-se para a entrega.</p>
-            <edq-button variant="primary" size="md" routerLink="/app/deliveries">
-              Ver Entregas
-            </edq-button>
+            <edq-button variant="primary" size="md" routerLink="/app/deliveries">Ver Entregas</edq-button>
           }
 
           @if (proposal.status === 'rejected') {
             <p class="action-card__hint">Sua proposta não foi selecionada desta vez.</p>
-            <edq-button variant="primary" size="md" routerLink="/app/available-orders">
-              Ver Novos Pedidos
-            </edq-button>
+            <edq-button variant="primary" size="md" routerLink="/app/available-orders">Ver Novos Pedidos</edq-button>
           }
         </div>
       </aside>

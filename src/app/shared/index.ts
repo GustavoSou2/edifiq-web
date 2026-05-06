@@ -9,6 +9,10 @@ export { PageHeaderComponent }  from './components/page-header/page-header.compo
 export { StatCardComponent }    from './components/stat-card/stat-card.component';
 export { StatusBadgeComponent } from './components/status-badge/status-badge.component';
 export { MapComponent }         from './components/map/map.component';
+export { ToastContainerComponent } from './components/toast/toast-container.component';
+export { ToastItemComponent }      from './components/toast/toast-item.component';
+export { ToastService }            from './services/toast.service';
+export type { Toast, ToastType, ToastOptions } from './components/toast/toast.types';
 
 /* ── Factories ──────────────────────────────────────────────*/
 export { createButtonConfig } from './factories/button.factory';
@@ -26,12 +30,12 @@ export type {
 
 export type {
   TenantId, UserId, OrderId, SupplierId, ProposalId, DeliveryId,
-  OrderStatus, ProposalStatus, DeliveryStatus, SupplierStatus,
-  TenantStatus, PlanName, NotificationChannel,
+  OrderStatus, ProposalStatus, DeliveryStatus, SupplierStatus, TenantStatus,
   Plan, Tenant, User, Role, Category,
   Supplier, OrderItem, Order,
   ProposalItem, Proposal, OrderSelection,
   Delivery, Rating, Webhook,
+  AuditLog, OrderDistribution,
   PaginatedResponse, PaginationParams,
   OrderFilters, SupplierFilters,
 } from './types/domain.types';

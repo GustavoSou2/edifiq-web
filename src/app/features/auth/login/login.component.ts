@@ -11,6 +11,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { InputComponent } from '../../../shared/components/input/input.component';
 import { AuthService } from '../services/auth.service';
+import { ToastService } from '../../../shared/services/toast.service';
 
 interface LoginForm {
   email:    string;
@@ -25,7 +26,6 @@ interface LoginForm {
   template: `
     <div class="auth-card">
 
-      <!-- Header -->
       <div class="auth-card__header">
         <h2 class="auth-card__title">Bem-vindo de volta</h2>
         <p class="auth-card__subtitle">
@@ -33,7 +33,6 @@ interface LoginForm {
         </p>
       </div>
 
-      <!-- Social login -->
       <div class="social-buttons">
         <button class="social-btn" type="button" aria-label="Entrar com Google">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -56,12 +55,10 @@ interface LoginForm {
         </button>
       </div>
 
-      <!-- Divider -->
       <div class="auth-divider">
         <span>ou entre com e-mail</span>
       </div>
 
-      <!-- Error alert -->
       @if (authService.error()) {
         <div class="auth-alert auth-alert--error" role="alert">
           <span class="auth-alert__icon">
@@ -71,7 +68,6 @@ interface LoginForm {
         </div>
       }
 
-      <!-- Form -->
       <form class="auth-form" (ngSubmit)="handleSubmit()" #loginForm="ngForm" novalidate>
 
         <edq-input
@@ -113,7 +109,6 @@ interface LoginForm {
 
       </form>
 
-      <!-- Footer -->
       <p class="auth-card__footer">
         Não tem uma conta?
         <a routerLink="/auth/register">Criar conta grátis</a>
@@ -126,6 +121,7 @@ interface LoginForm {
 export class LoginComponent {
   protected readonly authService = inject(AuthService);
   private readonly router        = inject(Router);
+  private readonly toast         = inject(ToastService);
 
   /* ── Form state ─────────────────────────────────────────── */
   protected form: LoginForm = { email: '', password: '' };
@@ -169,13 +165,22 @@ export class LoginComponent {
 
     if (!this.emailValid() || !this.passwordValid()) return;
 
+    const loadingId = this.toast.loading('Entrando na conta...');
+
     const ok = await this.authService.login({
       email:    this.form.email,
       password: this.form.password,
     });
 
+    this.toast.dismiss(loadingId);
+
     if (ok) {
-      await this.router.navigate(['/dashboard']);
+      this.toast.success('Login realizado!', { message: 'Bem-vindo de volta.' });
+      await this.router.navigate(['/app/dashboard']);
+    } else {
+      this.toast.error(this.authService.error() ?? 'Falha ao entrar.', {
+        message: 'Verifique seu e-mail e senha.',
+      });
     }
   }
 }

@@ -11,9 +11,11 @@ import { Router, RouterLink } from '@angular/router';
 import { ButtonComponent } from '../../../shared/components/button/button.component';
 import { InputComponent } from '../../../shared/components/input/input.component';
 import { AuthService } from '../services/auth.service';
+import { ToastService } from '../../../shared/services/toast.service';
 
 interface RegisterForm {
   name:            string;
+  tenant:          string;
   email:           string;
   password:        string;
   confirmPassword: string;
@@ -65,7 +67,16 @@ interface RegisterForm {
 
       <!-- Form -->
       <form class="auth-form" (ngSubmit)="handleSubmit()" novalidate>
-
+<edq-input
+          label="Nome da Empresa"
+          type="text"
+          placeholder="Edifiq IO"
+          [variant]="nameVariant()"
+          [hint]="nameHint()"
+          [(value)]="form.tenant"
+          [required]="true"
+          autocomplete="tenant"
+        />
         <edq-input
           label="Nome completo"
           type="text"
@@ -167,9 +178,11 @@ interface RegisterForm {
 export class RegisterComponent {
   protected readonly authService = inject(AuthService);
   private readonly router        = inject(Router);
+  private readonly toast         = inject(ToastService);
 
   /* ── Form state ─────────────────────────────────────────── */
   protected form: RegisterForm = {
+    tenant:          '',
     name:            '',
     email:           '',
     password:        '',
@@ -182,6 +195,11 @@ export class RegisterComponent {
   protected readonly nameValid = computed(() => {
     if (!this.submitted()) return true;
     return this.form.name.trim().length >= 2;
+  });
+ 
+  protected readonly tenantValid = computed(() => {
+    if (!this.submitted()) return true;
+    return this.form.tenant.trim().length >= 2;
   });
 
   protected readonly emailValid = computed(() => {
@@ -248,6 +266,7 @@ export class RegisterComponent {
 
   protected readonly canSubmit = computed(() =>
     this.form.name.length > 0 &&
+    this.form.tenant.length > 0 &&
     this.form.email.length > 0 &&
     this.form.password.length > 0 &&
     this.form.confirmPassword.length > 0 &&
@@ -262,13 +281,18 @@ export class RegisterComponent {
     if (!this.nameValid() || !this.emailValid() || !this.passwordValid() || !this.confirmValid()) return;
 
     const ok = await this.authService.register({
+      tenantName:     this.form.tenant,
       name:     this.form.name,
       email:    this.form.email,
       password: this.form.password,
     });
 
     if (ok) {
-      await this.router.navigate(['/auth/confirm-email']);
+      this.toast.success('Conta criada com sucesso!', {
+        message: 'Verifique seu e-mail para ativar todos os recursos.',
+        duration: 6000,
+      });
+      await this.router.navigate(['/app/dashboard']);
     }
   }
 }

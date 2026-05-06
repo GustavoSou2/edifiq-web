@@ -1,13 +1,13 @@
 /**
  * Edifiq — Domain Types
- * Tipos de domínio baseados no schema V1__schema.sql.
- * Usados em toda a aplicação para tipagem consistente.
+ * Baseado no schema real do banco (DDL) com campos em camelCase
+ * conforme serialização padrão do backend Java.
  */
 
 /* ── IDs ────────────────────────────────────────────────────*/
-export type TenantId  = string;
-export type UserId    = string;
-export type OrderId   = string;
+export type TenantId   = string;
+export type UserId     = string;
+export type OrderId    = string;
 export type SupplierId = string;
 export type ProposalId = string;
 export type DeliveryId = string;
@@ -41,217 +41,277 @@ export type SupplierStatus = 'active' | 'inactive' | 'blocked';
 
 export type TenantStatus = 'trial' | 'active' | 'suspended' | 'cancelled';
 
-export type PlanName = 'free' | 'starter' | 'pro' | 'enterprise';
-
-export type NotificationChannel = 'email' | 'sms' | 'push' | 'webhook';
-
-/* ── Entidades ──────────────────────────────────────────────*/
+/* ── plans ──────────────────────────────────────────────────*/
 export interface Plan {
-  id:                   string;
-  name:                 PlanName;
-  price_monthly:        number;
-  max_users:            number;
-  max_suppliers:        number;
-  max_orders_per_month: number;
-  has_analytics:        boolean;
-  has_api_access:       boolean;
+  id:                string;
+  name:              string;
+  maxUsers:          number;
+  maxSuppliers:      number;
+  maxOrdersPerMonth: number;
+  hasAnalytics:      boolean;
+  hasApiAccess:      boolean;
+  priceMonthly:      number;
+  createdAt:         string;
 }
 
+/* ── tenants ────────────────────────────────────────────────*/
 export interface Tenant {
-  id:            TenantId;
-  name:          string;
-  slug:          string;
-  cnpj?:         string;
-  status:        TenantStatus;
-  plan_id:       string;
-  plan?:         Plan;
-  settings:      Record<string, unknown>;
-  trial_ends_at: string | null;
-  created_at:    string;
+  id:          TenantId;
+  planId:      string;
+  plan?:       Plan;
+  slug:        string;
+  name:        string;
+  cnpj:        string | null;
+  status:      TenantStatus;
+  settings:    Record<string, unknown>;
+  trialEndsAt: string | null;
+  createdAt:   string;
+  updatedAt:   string;
 }
 
+/* ── users ──────────────────────────────────────────────────*/
 export interface User {
-  id:               UserId;
-  tenant_id:        TenantId;
-  name:             string;
-  email:            string;
-  is_active:        boolean;
-  email_verified:   boolean;
-  last_login_at:    string | null;
-  avatar_url?:      string;
-  phone?:           string;
-  created_at:       string;
-  roles?:           Role[];
+  id:            UserId;
+  tenantId:      TenantId;
+  email:         string;
+  /** full_name no banco → fullName no Java */
+  fullName:      string;
+  phone:         string | null;
+  avatarUrl:     string | null;
+  isActive:      boolean;
+  emailVerified: boolean;
+  lastLoginAt:   string | null;
+  createdAt:     string;
+  updatedAt:     string;
+  roles?:        Role[];
 }
 
+/* ── roles ──────────────────────────────────────────────────*/
 export interface Role {
   id:          string;
-  tenant_id:   TenantId;
+  tenantId:    TenantId;
   name:        string;
+  description: string | null;
   permissions: string[];
-  is_system:   boolean;
+  isSystem:    boolean;
+  createdAt:   string;
 }
 
+/* ── categories ─────────────────────────────────────────────*/
 export interface Category {
   id:        string;
+  parentId:  string | null;
   name:      string;
   slug:      string;
-  parent_id: string | null;
+  createdAt: string;
   children?: Category[];
 }
 
+/* ── suppliers ──────────────────────────────────────────────*/
 export interface Supplier {
-  id:               SupplierId;
-  tenant_id:        TenantId;
-  name:             string;
-  cnpj?:            string;
-  email:            string;
-  phone?:           string;
-  city:             string;
-  state:            string;
-  lat:              number;
-  lng:              number;
-  reputation_score: number;
-  total_ratings:    number;
-  total_deliveries: number;
-  response_sla_min: number;
-  max_delivery_km:  number;
-  status:           SupplierStatus;
-  categories?:      Category[];
-  created_at:       string;
+  id:              SupplierId;
+  tenantId:        TenantId;
+  /** company_name no banco → companyName no Java */
+  companyName:     string;
+  cnpj:            string;
+  email:           string;
+  phone:           string | null;
+  status:          SupplierStatus;
+  address:         string | null;
+  city:            string | null;
+  state:           string | null;
+  zipCode:         string | null;
+  lat:             number | null;
+  lng:             number | null;
+  reputationScore: number;
+  totalRatings:    number;
+  totalDeliveries: number;
+  maxDeliveryKm:   number;
+  responseSlaMin:  number;
+  createdAt:       string;
+  updatedAt:       string;
+  categories?:     Category[];
 }
 
+/* ── order_items ────────────────────────────────────────────*/
 export interface OrderItem {
   id:          string;
-  order_id:    OrderId;
-  category_id: string;
+  orderId:     OrderId;
+  categoryId:  string | null;
   category?:   Category;
   description: string;
   quantity:    number;
   unit:        string;
-  sort_order:  number;
+  notes:       string | null;
+  sortOrder:   number;
 }
 
+/* ── orders ─────────────────────────────────────────────────*/
 export interface Order {
-  id:                   OrderId;
-  tenant_id:            TenantId;
-  reference_code:       string;
-  status:               OrderStatus;
-  is_urgent:            boolean;
-  delivery_address:     string;
-  delivery_city:        string;
-  delivery_state:       string;
-  delivery_lat:         number;
-  delivery_lng:         number;
-  auction_duration_min: number;
-  max_suppliers:        number;
-  expires_at:           string | null;
-  metadata:             Record<string, unknown>;
-  created_by:           UserId;
-  created_at:           string;
-  items?:               OrderItem[];
-  proposals?:           Proposal[];
-  proposal_count?:      number;
+  id:                OrderId;
+  tenantId:          TenantId;
+  createdBy:         UserId;
+  status:            OrderStatus;
+  isUrgent:          boolean;
+  deliveryAddress:   string;
+  deliveryCity:      string | null;
+  deliveryState:     string | null;
+  deliveryLat:       number | null;
+  deliveryLng:       number | null;
+  maxSuppliers:      number;
+  auctionDurationMin: number;
+  expiresAt:         string | null;
+  publishedAt:       string | null;
+  createdAt:         string;
+  updatedAt:         string;
+  notes:             string | null;
+  referenceCode:     string | null;
+  metadata:          Record<string, unknown>;
+  items?:            OrderItem[];
+  proposals?:        Proposal[];
+  proposalCount?:    number;
 }
 
-export interface ProposalItem {
-  id:            string;
-  proposal_id:   ProposalId;
-  order_item_id: string;
-  order_item?:   OrderItem;
-  unit_price:    number;
-  quantity:      number;
-  available:     boolean;
-}
-
+/* ── proposals ──────────────────────────────────────────────*/
 export interface Proposal {
-  id:           ProposalId;
-  order_id:     OrderId;
-  supplier_id:  SupplierId;
-  supplier?:    Supplier;
-  status:       ProposalStatus;
-  total_price:  number;
-  delivery_min: number;
-  expires_at:   string | null;
-  submitted_at: string | null;
-  created_at:   string;
-  items?:       ProposalItem[];
+  id:          ProposalId;
+  orderId:     OrderId;
+  supplierId:  SupplierId;
+  supplier?:   Supplier;
+  status:      ProposalStatus;
+  totalPrice:  number;
+  deliveryMin: number;
+  notes:       string | null;
+  submittedAt: string;
+  expiresAt:   string | null;
+  updatedAt:   string;
+  items?:      ProposalItem[];
 }
 
-export interface OrderSelection {
+/* ── proposal_items ─────────────────────────────────────────*/
+export interface ProposalItem {
   id:          string;
-  order_id:    OrderId;
-  proposal_id: ProposalId;
-  proposal?:   Proposal;
-  selected_by: UserId;
-  reason:      string;
-  created_at:  string;
+  proposalId:  ProposalId;
+  orderItemId: string;
+  orderItem?:  OrderItem;
+  unitPrice:   number;
+  quantity:    number;
+  available:   boolean;
+  notes:       string | null;
 }
 
+/* ── order_selections ───────────────────────────────────────*/
+export interface OrderSelection {
+  id:         string;
+  orderId:    OrderId;
+  proposalId: ProposalId;
+  proposal?:  Proposal;
+  selectedBy: UserId;
+  selectedAt: string;
+  reason:     string | null;
+}
+
+/* ── deliveries ─────────────────────────────────────────────*/
 export interface Delivery {
-  id:             DeliveryId;
-  order_id:       OrderId;
-  supplier_id:    SupplierId;
-  supplier?:      Supplier;
-  status:         DeliveryStatus;
-  tracking_code:  string | null;
-  scheduled_at:   string | null;
-  dispatched_at:  string | null;
-  delivered_at:   string | null;
-  proof_url:      string | null;
-  created_at:     string;
+  id:                DeliveryId;
+  /** Ligada a order_selection, não diretamente ao order/supplier */
+  orderSelectionId:  string;
+  orderSelection?:   OrderSelection;
+  status:            DeliveryStatus;
+  trackingCode:      string | null;
+  scheduledAt:       string | null;
+  dispatchedAt:      string | null;
+  deliveredAt:       string | null;
+  deliveryNotes:     string | null;
+  proofUrl:          string | null;
+  createdAt:         string;
+  updatedAt:         string;
 }
 
+/* ── ratings ────────────────────────────────────────────────*/
 export interface Rating {
-  id:                  string;
-  order_selection_id:  string;
-  supplier_id:         SupplierId;
-  supplier?:           Supplier;
-  rated_by:            UserId;
-  score:               1 | 2 | 3 | 4 | 5;
-  comment:             string | null;
-  response:            string | null;
-  created_at:          string;
+  id:               string;
+  orderSelectionId: string;
+  ratedBy:          UserId;
+  supplierId:       SupplierId;
+  supplier?:        Supplier;
+  score:            1 | 2 | 3 | 4 | 5;
+  comment:          string | null;
+  response:         string | null;
+  createdAt:        string;
 }
 
+/* ── webhooks ───────────────────────────────────────────────*/
 export interface Webhook {
   id:        string;
-  tenant_id: TenantId;
+  tenantId:  TenantId;
   url:       string;
   events:    string[];
   secret:    string;
-  is_active: boolean;
-  created_at: string;
+  isActive:  boolean;
+  createdAt: string;
+}
+
+/* ── audit_logs ─────────────────────────────────────────────*/
+export interface AuditLog {
+  id:        string;
+  tenantId:  TenantId;
+  userId:    UserId | null;
+  action:    string;
+  entity:    string;
+  entityId:  string | null;
+  payload:   Record<string, unknown>;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+/* ── order_distributions ────────────────────────────────────*/
+export interface OrderDistribution {
+  id:               string;
+  orderId:          OrderId;
+  supplierId:       SupplierId;
+  supplier?:        Supplier;
+  notifiedAt:       string;
+  channel:          string;
+  openedAt:         string | null;
+  queueMessageId:   string | null;
+  queuedAt:         string | null;
+  processingAt:     string | null;
+  sentAt:           string | null;
+  failedAt:         string | null;
+  dispatchAttempts: number;
+  failureReason:    string | null;
 }
 
 /* ── Paginação ──────────────────────────────────────────────*/
 export interface PaginatedResponse<T> {
-  data:        T[];
-  total:       number;
-  page:        number;
-  per_page:    number;
-  total_pages: number;
+  data:       T[];
+  total:      number;
+  page:       number;
+  perPage:    number;
+  totalPages: number;
 }
 
 export interface PaginationParams {
-  page?:     number;
-  per_page?: number;
-  sort?:     string;
-  order?:    'asc' | 'desc';
+  page?:    number;
+  perPage?: number;
+  sort?:    string;
+  order?:   'asc' | 'desc';
 }
 
 /* ── Filtros comuns ─────────────────────────────────────────*/
 export interface OrderFilters extends PaginationParams {
-  status?:    OrderStatus;
-  is_urgent?: boolean;
-  search?:    string;
-  from?:      string;
-  to?:        string;
+  status?:   OrderStatus;
+  isUrgent?: boolean;
+  search?:   string;
+  from?:     string;
+  to?:       string;
 }
 
 export interface SupplierFilters extends PaginationParams {
-  status?:      SupplierStatus;
-  category_id?: string;
-  search?:      string;
-  city?:        string;
+  status?:     SupplierStatus;
+  categoryId?: string;
+  search?:     string;
+  city?:       string;
 }

@@ -1,79 +1,19 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
+  inject,
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
-import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
+import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
-import { ButtonComponent } from '../../../../shared/components/button/button.component';
-import { InputComponent } from '../../../../shared/components/input/input.component';
+import { ButtonComponent }      from '../../../../shared/components/button/button.component';
+import { InputComponent }       from '../../../../shared/components/input/input.component';
 import { Supplier, SupplierStatus } from '../../../../shared/types/domain.types';
-
-const MOCK_SUPPLIERS: Partial<Supplier>[] = [
-  {
-    id: '1',
-    name: 'Depósito Central Ltda',
-    city: 'Campinas',
-    state: 'SP',
-    reputation_score: 4.8,
-    response_sla_min: 30,
-    total_deliveries: 142,
-    status: 'active',
-    categories: [{ id: 'c1', name: 'Cimento', slug: 'cimento', parent_id: null }, { id: 'c2', name: 'Agregados', slug: 'agregados', parent_id: null }],
-    created_at: '2022-03-10T00:00:00Z',
-  },
-  {
-    id: '2',
-    name: 'Materiais São Paulo S/A',
-    city: 'São Paulo',
-    state: 'SP',
-    reputation_score: 4.2,
-    response_sla_min: 45,
-    total_deliveries: 98,
-    status: 'active',
-    categories: [{ id: 'c3', name: 'Alvenaria', slug: 'alvenaria', parent_id: null }],
-    created_at: '2021-07-22T00:00:00Z',
-  },
-  {
-    id: '3',
-    name: 'Construfácil Indaiatuba',
-    city: 'Indaiatuba',
-    state: 'SP',
-    reputation_score: 3.1,
-    response_sla_min: 60,
-    total_deliveries: 55,
-    status: 'inactive',
-    categories: [{ id: 'c4', name: 'Ferragens', slug: 'ferragens', parent_id: null }],
-    created_at: '2023-01-05T00:00:00Z',
-  },
-  {
-    id: '4',
-    name: 'Ferro & Aço Sorocaba',
-    city: 'Sorocaba',
-    state: 'SP',
-    reputation_score: 2.7,
-    response_sla_min: 90,
-    total_deliveries: 20,
-    status: 'blocked',
-    categories: [{ id: 'c5', name: 'Metais', slug: 'metais', parent_id: null }],
-    created_at: '2023-06-18T00:00:00Z',
-  },
-  {
-    id: '5',
-    name: 'Jundiaí Materiais',
-    city: 'Jundiaí',
-    state: 'SP',
-    reputation_score: 4.6,
-    response_sla_min: 20,
-    total_deliveries: 210,
-    status: 'active',
-    categories: [{ id: 'c1', name: 'Cimento', slug: 'cimento', parent_id: null }, { id: 'c6', name: 'Tintas', slug: 'tintas', parent_id: null }],
-    created_at: '2020-11-30T00:00:00Z',
-  },
-];
+import { SuppliersApiService }  from '../../../../core/services/api/suppliers-api.service';
 
 const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
   { value: 'all',      label: 'Todos' },
@@ -92,7 +32,6 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
       <edq-button slot="actions" variant="primary" size="sm" routerLink="new">+ Novo Fornecedor</edq-button>
     </edq-page-header>
 
-    <!-- Filtros -->
     <div class="filters-bar">
       <div class="filter-tabs" role="tablist" aria-label="Filtrar por status">
         @for (f of statusFilters; track f.value) {
@@ -120,79 +59,101 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
       </div>
     </div>
 
-    <!-- Tabela -->
-    <div class="table-wrapper">
-      <table class="data-table" aria-label="Lista de fornecedores">
-        <thead>
-          <tr>
-            <th scope="col">Nome</th>
-            <th scope="col">Cidade/Estado</th>
-            <th scope="col">Categorias</th>
-            <th scope="col">Reputação</th>
-            <th scope="col">SLA</th>
-            <th scope="col">Status</th>
-            <th scope="col"><span class="sr-only">Ações</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (supplier of filteredSuppliers(); track supplier.id) {
-            <tr class="table-row">
-              <td>
-                <span class="supplier-name">{{ supplier.name }}</span>
-              </td>
-              <td class="city-cell">📍 {{ supplier.city }}, {{ supplier.state }}</td>
-              <td>
-                <div class="category-chips">
-                  @for (cat of supplier.categories?.slice(0, 2); track cat.id) {
-                    <span class="category-chip">{{ cat.name }}</span>
-                  }
-                  @if ((supplier.categories?.length ?? 0) > 2) {
-                    <span class="category-chip category-chip--more">+{{ (supplier.categories?.length ?? 0) - 2 }}</span>
-                  }
-                </div>
-              </td>
-              <td>
-                <span class="reputation-score" [class]="reputationClass(supplier.reputation_score ?? 0)">
-                  ★ {{ supplier.reputation_score?.toFixed(1) }}
-                </span>
-              </td>
-              <td class="sla-cell">{{ supplier.response_sla_min }} min</td>
-              <td><edq-status-badge [status]="supplier.status!" /></td>
-              <td>
-                <div class="row-actions">
-                  <edq-button variant="ghost" size="sm" [routerLink]="[supplier.id]">Ver</edq-button>
-                </div>
-              </td>
-            </tr>
-          } @empty {
+    @if (isLoading()) {
+      <div class="table-loading" aria-live="polite">Carregando fornecedores...</div>
+    } @else if (error()) {
+      <div class="table-error" role="alert">{{ error() }}</div>
+    } @else {
+      <div class="table-wrapper">
+        <table class="data-table" aria-label="Lista de fornecedores">
+          <thead>
             <tr>
-              <td colspan="7">
-                <div class="table-empty">
-                  <span>🏭</span>
-                  <p>Nenhum fornecedor encontrado.</p>
-                </div>
-              </td>
+              <th scope="col">Nome</th>
+              <th scope="col">Cidade/Estado</th>
+              <th scope="col">Categorias</th>
+              <th scope="col">Reputação</th>
+              <th scope="col">SLA</th>
+              <th scope="col">Status</th>
+              <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (supplier of filteredSuppliers(); track supplier.id) {
+              <tr class="table-row">
+                <td><span class="supplier-name">{{ supplier.companyName }}</span></td>
+                <td class="city-cell">📍 {{ supplier.city }}, {{ supplier.state }}</td>
+                <td>
+                  <div class="category-chips">
+                    @for (cat of supplier.categories?.slice(0, 2); track cat.id) {
+                      <span class="category-chip">{{ cat.name }}</span>
+                    }
+                    @if ((supplier.categories?.length ?? 0) > 2) {
+                      <span class="category-chip category-chip--more">+{{ (supplier.categories?.length ?? 0) - 2 }}</span>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <span class="reputation-score" [class]="reputationClass(supplier.reputationScore)">
+                    ★ {{ supplier.reputationScore.toFixed(1) }}
+                  </span>
+                </td>
+                <td class="sla-cell">{{ supplier.responseSlaMin }} min</td>
+                <td><edq-status-badge [status]="supplier.status" /></td>
+                <td>
+                  <div class="row-actions">
+                    <edq-button variant="ghost" size="sm" [routerLink]="[supplier.id]">Ver</edq-button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7">
+                  <div class="table-empty">
+                    <span>🏭</span>
+                    <p>Nenhum fornecedor encontrado.</p>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
   `,
   styleUrl: './suppliers-list.component.scss',
 })
-export class SuppliersListComponent {
+export class SuppliersListComponent implements OnInit {
+  private readonly suppliersApi = inject(SuppliersApiService);
+
   protected readonly statusFilters = STATUS_FILTERS;
   protected readonly activeStatus  = signal<SupplierStatus | 'all'>('all');
   protected readonly searchQuery   = signal('');
 
+  protected readonly suppliers = signal<Supplier[]>([]);
+  protected readonly isLoading = signal(false);
+  protected readonly error     = signal<string | null>(null);
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  private load(): void {
+    this.isLoading.set(true);
+    this.error.set(null);
+    this.suppliersApi.list().subscribe({
+      next:  res => { this.suppliers.set(res.data); this.isLoading.set(false); },
+      error: ()  => { this.error.set('Erro ao carregar fornecedores.'); this.isLoading.set(false); },
+    });
+  }
+
   protected readonly filteredSuppliers = computed(() => {
-    let list = MOCK_SUPPLIERS;
+    let list = this.suppliers();
     const status = this.activeStatus();
     if (status !== 'all') list = list.filter(s => s.status === status);
     const q = this.searchQuery().toLowerCase();
     if (q) {
       list = list.filter(s =>
-        s.name?.toLowerCase().includes(q) ||
+        s.companyName?.toLowerCase().includes(q) ||
         s.city?.toLowerCase().includes(q),
       );
     }

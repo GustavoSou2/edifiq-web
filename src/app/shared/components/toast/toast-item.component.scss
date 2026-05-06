@@ -1,0 +1,155 @@
+/* ============================================================
+   Edifiq — Toast Item
+   ============================================================ */
+
+.toast-item {
+  display:         flex;
+  align-items:     flex-start;
+  gap:             var(--space-3);
+  padding:         var(--space-4) var(--space-4);
+  background:      var(--color-surface);
+  border-radius:   var(--radius-xl);
+  box-shadow:      var(--shadow-xl);
+  border:          1px solid var(--color-border);
+  pointer-events:  all;
+  position:        relative;
+  overflow:        hidden;
+  min-width:       280px;
+  max-width:       380px;
+
+  /* Entrada */
+  animation: toast-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+
+  /* Saída */
+  &--leaving {
+    animation: toast-out 0.28s ease forwards;
+  }
+}
+
+/* ── Variantes de cor ─────────────────────────────────────── */
+.toast--success {
+  border-left: 3px solid var(--mn-green);
+  .toast-icon { color: var(--mn-green); }
+}
+
+.toast--error {
+  border-left: 3px solid var(--mn-red);
+  .toast-icon { color: var(--mn-red); }
+}
+
+.toast--warning {
+  border-left: 3px solid var(--mn-yellow);
+  .toast-icon { color: #C47A00; }
+}
+
+.toast--info {
+  border-left: 3px solid var(--mn-blue);
+  .toast-icon { color: var(--mn-blue); }
+}
+
+.toast--loading {
+  border-left: 3px solid var(--mn-purple);
+  .toast-icon { color: var(--mn-purple); }
+}
+
+/* ── Barra de progresso ───────────────────────────────────── */
+.toast-progress {
+  position:      absolute;
+  bottom:        0;
+  left:          0;
+  height:        3px;
+  width:         100%;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  opacity:       0.6;
+  transform-origin: left;
+  animation:     toast-progress linear forwards;
+}
+
+/* ── Ícone ────────────────────────────────────────────────── */
+.toast-icon {
+  flex-shrink: 0;
+  margin-top:  1px;
+  line-height: 0;
+
+  /* Spinner para loading */
+  :global(.toast-spin) {
+    animation: spin 0.9s linear infinite;
+  }
+}
+
+/* ── Conteúdo ─────────────────────────────────────────────── */
+.toast-content {
+  flex:           1;
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  min-width:      0;
+}
+
+.toast-title {
+  font-size:   var(--text-sm);
+  font-weight: 600;
+  color:       var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.toast-message {
+  font-size:   var(--text-xs);
+  color:       var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Botão fechar ─────────────────────────────────────────── */
+.toast-close {
+  flex-shrink:   0;
+  width:         24px;
+  height:        24px;
+  border-radius: var(--radius-sm);
+  background:    transparent;
+  border:        none;
+  cursor:        pointer;
+  color:         var(--color-text-muted);
+  display:       flex;
+  align-items:   center;
+  justify-content: center;
+  transition:    all var(--transition-base);
+  margin-top:    -2px;
+  margin-right:  -4px;
+
+  &:hover {
+    background: var(--color-surface-alt);
+    color:      var(--color-text-primary);
+  }
+}
+
+/* ── Animações ────────────────────────────────────────────── */
+@keyframes toast-in {
+  from {
+    opacity:   0;
+    transform: translateX(100%) scale(0.9);
+  }
+  to {
+    opacity:   1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity:   1;
+    transform: translateX(0) scale(1);
+    max-height: 120px;
+    margin-bottom: 0;
+  }
+  to {
+    opacity:   0;
+    transform: translateX(110%) scale(0.9);
+    max-height: 0;
+    margin-bottom: calc(var(--space-3) * -1);
+  }
+}
+
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
