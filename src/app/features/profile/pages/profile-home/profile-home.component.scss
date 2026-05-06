@@ -98,3 +98,32 @@
   color:       var(--color-text-secondary);
   font-weight: 600;
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .avatar-section {
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            var(--space-4);
+    padding:        var(--space-4);
+    margin-bottom:  var(--space-5);
+  }
+
+  .avatar-circle {
+    width:     64px;
+    height:    64px;
+    font-size: var(--text-xl);
+  }
+
+  .profile-section { padding: var(--space-4); }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-4);
+  }
+
+  .form-actions {
+    flex-direction: column;
+    & > * { width: 100%; }
+  }
+}

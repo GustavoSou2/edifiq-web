@@ -213,3 +213,55 @@
   font-size: var(--text-xs);
   color:     var(--color-text-muted);
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap:                   var(--space-3);
+    margin-bottom:         var(--space-6);
+  }
+
+  .stat-card {
+    padding: var(--space-4);
+    gap:     var(--space-3);
+  }
+
+  .stat-card__icon {
+    width:  36px;
+    height: 36px;
+  }
+
+  /* Tabela de fornecedores → cards */
+  .data-table thead { display: none; }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td { display: block; width: 100%; }
+
+  .table-row {
+    padding:       var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+    position:      relative;
+
+    &:last-child { border-bottom: none; }
+    &:hover td   { background: transparent; }
+
+    td { padding: 0; border: none; margin-bottom: var(--space-1); }
+
+    /* Fornecedor — destaque */
+    td:nth-child(1) { font-weight: 700; font-size: var(--text-sm); margin-bottom: var(--space-2); }
+    /* Pedidos + preço em linha */
+    td:nth-child(2),
+    td:nth-child(3) { display: inline-block; width: auto; margin-right: var(--space-4); font-size: var(--text-xs); color: var(--color-text-muted); }
+    /* Reputação */
+    td:nth-child(4) { display: inline-block; width: auto; margin-right: var(--space-3); }
+    /* Taxa */
+    td:nth-child(5) { display: inline-block; width: auto; font-size: var(--text-xs); color: var(--color-text-muted); }
+  }
+
+  .chart-placeholder {
+    padding: var(--space-10) var(--space-4);
+  }
+}

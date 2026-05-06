@@ -80,6 +80,40 @@ export const routes: Routes = [
           import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES),
         title: 'Meu Perfil — Edifiq',
       },
+
+      /* ── Painel Fornecedor ──────────────────────────────── */
+      {
+        path: 'supplier-dashboard',
+        loadChildren: () =>
+          import('./features/supplier-dashboard/supplier-dashboard.routes').then(
+            m => m.SUPPLIER_DASHBOARD_ROUTES,
+          ),
+        title: 'Dashboard Fornecedor — Edifiq',
+      },
+      {
+        path: 'available-orders',
+        loadChildren: () =>
+          import('./features/available-orders/available-orders.routes').then(
+            m => m.AVAILABLE_ORDERS_ROUTES,
+          ),
+        title: 'Pedidos Disponíveis — Edifiq',
+      },
+      {
+        path: 'my-proposals',
+        loadChildren: () =>
+          import('./features/my-proposals/my-proposals.routes').then(
+            m => m.MY_PROPOSALS_ROUTES,
+          ),
+        title: 'Minhas Propostas — Edifiq',
+      },
+      {
+        path: 'my-reputation',
+        loadChildren: () =>
+          import('./features/my-reputation/my-reputation.routes').then(
+            m => m.MY_REPUTATION_ROUTES,
+          ),
+        title: 'Reputação — Edifiq',
+      },
     ],
   },
 

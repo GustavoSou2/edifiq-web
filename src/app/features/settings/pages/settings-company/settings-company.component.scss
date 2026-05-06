@@ -117,3 +117,34 @@
   color:         var(--color-danger);
   margin-bottom: var(--space-4);
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-4);
+  }
+
+  .settings-nav {
+    position: static; /* remove sticky */
+    flex-direction: row;
+    flex-wrap:      wrap;
+    gap:            var(--space-1);
+    padding:        var(--space-2);
+  }
+
+  .settings-nav__link {
+    padding:    var(--space-2) var(--space-3);
+    font-size:  var(--text-xs);
+    flex-shrink: 0;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap:                   var(--space-4);
+  }
+
+  .settings-section {
+    padding: var(--space-4);
+  }
+}

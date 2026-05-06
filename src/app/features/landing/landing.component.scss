@@ -682,3 +682,90 @@
   font-size:   var(--text-sm);
   color:       rgba(255,255,255,0.3);
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-container,
+  .lp-nav__inner { padding: 0 var(--space-4); }
+
+  .lp-section-header {
+    margin-bottom: var(--space-8);
+
+    h2 { font-size: var(--text-2xl); }
+    p  { font-size: var(--text-base); }
+  }
+
+  .lp-hero {
+    padding:        var(--space-10) var(--space-4) var(--space-8);
+    flex-direction: column;
+    gap:            var(--space-8);
+  }
+
+  .lp-hero__title  { font-size: clamp(1.75rem, 7vw, 2.5rem); }
+  .lp-hero__desc   { font-size: var(--text-base); max-width: 100%; }
+
+  .lp-hero__actions {
+    flex-direction: column;
+    align-items:    stretch;
+    gap:            var(--space-3);
+
+    .lp-btn { width: 100%; justify-content: center; }
+  }
+
+  .lp-hero__visual { max-width: 100%; }
+
+  .hero-float-card {
+    position: static;
+    margin-top: var(--space-4);
+    width: fit-content;
+  }
+
+  .lp-stats { padding: var(--space-8) 0; }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap:                   var(--space-6);
+  }
+
+  .stat-item__value { font-size: var(--text-3xl); }
+
+  .lp-features,
+  .lp-how,
+  .lp-pricing { padding: var(--space-12) 0; }
+
+  .how-steps {
+    flex-direction: column;
+    align-items:    center;
+    gap:            var(--space-6);
+  }
+
+  .how-step { max-width: 100%; }
+
+  .lp-cta { padding: var(--space-12) 0; }
+
+  .lp-cta__inner h2 { font-size: var(--text-2xl); }
+  .lp-cta__inner p  { font-size: var(--text-base); }
+
+  .lp-cta__actions {
+    flex-direction: column;
+    align-items:    stretch;
+    width:          100%;
+    padding:        0 var(--space-4);
+
+    .lp-btn { width: 100%; }
+  }
+
+  .lp-footer { padding: var(--space-10) 0 var(--space-6); }
+
+  .lp-footer__inner {
+    flex-direction: column;
+    gap:            var(--space-8);
+  }
+
+  .lp-footer__links {
+    gap:       var(--space-8);
+    flex-wrap: wrap;
+  }
+
+  .lp-nav__cta .lp-btn--ghost { display: none; }
+}

@@ -1,13 +1,25 @@
 /**
  * Edifiq — Map Types
- * Tipos públicos do componente de mapa.
+ * Estilo inspirado em Uber / iFood:
+ *   - Tile: CartoDB Positron (fundo branco, ruas cinza suave)
+ *   - Marcadores: pino sólido com sombra, sem borda branca grossa
+ *   - Popup: card flutuante com sombra suave
+ *   - Controles: zoom minimalista, sem atribuição visível por padrão
  */
 
 export type MapMarkerColor =
-  | 'purple' | 'green' | 'red' | 'yellow'
-  | 'blue'   | 'teal'  | 'orange' | 'gray';
+  | 'primary' | 'green' | 'red' | 'yellow'
+  | 'blue'    | 'teal'  | 'orange' | 'gray'
+  /* aliases legados */
+  | 'purple';
 
-export type MapTileStyle = 'street' | 'satellite' | 'topo' | 'dark';
+export type MapTileStyle =
+  | 'positron'      /* CartoDB Positron — iFood/Uber light (padrão) */
+  | 'positron_lite' /* Positron sem labels — ainda mais limpo        */
+  | 'dark'          /* CartoDB Dark Matter — Uber dark mode          */
+  | 'dark_lite'     /* Dark sem labels                               */
+  | 'street'        /* OSM padrão (fallback)                         */
+  | 'satellite';    /* Esri World Imagery                            */
 
 export interface MapMarker {
   lat:    number;
@@ -31,42 +43,66 @@ export interface MapConfig {
   fitBoundsPadding?: [number, number];
   fitBoundsMaxZoom?: number;
   openFirstPopup?:   boolean;
+  /** Cor hex do marcador único (usado com lat/lng direto) */
   markerColor?:      string;
   markerSize?:       number;
+  /** true = pino com cauda (estilo iFood); false = círculo (estilo Uber) */
   markerTail?:       boolean;
   borderRadius?:     string;
+  /** Cor da polyline de rota */
+  routeColor?:       string;
+  /** Espessura da polyline */
+  routeWeight?:      number;
 }
 
+/* ── Tile layers ──────────────────────────────────────────── */
 export const TILE_LAYERS: Record<MapTileStyle, { url: string; attribution: string }> = {
+  /* CartoDB Positron — fundo branco, ruas cinza claro, labels discretos */
+  positron: {
+    url:         'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  /* Positron sem labels — mapa ainda mais limpo para thumbnails */
+  positron_lite: {
+    url:         'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+  },
+  /* CartoDB Dark Matter — fundo escuro, estilo Uber dark */
+  dark: {
+    url:         'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+  },
+  /* Dark sem labels */
+  dark_lite: {
+    url:         'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+  },
+  /* OSM padrão — fallback */
   street: {
     url:         'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   },
+  /* Esri satellite */
   satellite: {
     url:         'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: '&copy; Esri',
   },
-  topo: {
-    url:         'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenTopoMap',
-  },
-  dark: {
-    url:         'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; CartoDB',
-  },
 };
 
+/* ── Marker colors ────────────────────────────────────────── */
 export const MARKER_COLORS: Record<MapMarkerColor, string> = {
-  purple: '#6C5CE7',
-  green:  '#00C875',
-  red:    '#E2445C',
-  yellow: '#FFCB00',
-  blue:   '#0086C0',
-  teal:   '#00D0D0',
-  orange: '#FF7575',
-  gray:   '#A8ABBE',
+  primary: '#4F46E5',   /* indigo — acento do design system */
+  purple:  '#4F46E5',   /* alias legado */
+  green:   '#059669',
+  red:     '#DC2626',
+  yellow:  '#D97706',
+  blue:    '#2563EB',
+  teal:    '#0891B2',
+  orange:  '#EA580C',
+  gray:    '#6B7280',
 };
 
+/* ── Default config ───────────────────────────────────────── */
 export const DEFAULT_CONFIG: Required<MapConfig> = {
   zoomControl:       true,
   dragging:          true,
@@ -74,14 +110,16 @@ export const DEFAULT_CONFIG: Required<MapConfig> = {
   doubleClickZoom:   true,
   touchZoom:         true,
   keyboard:          true,
-  attribution:       true,
-  tileStyle:         'street',
+  attribution:       false,   /* oculto por padrão — mais limpo */
+  tileStyle:         'positron',
   fitBounds:         true,
-  fitBoundsPadding:  [40, 40],
+  fitBoundsPadding:  [48, 48],
   fitBoundsMaxZoom:  14,
   openFirstPopup:    false,
-  markerColor:       '#6C5CE7',
-  markerSize:        28,
+  markerColor:       '#4F46E5',
+  markerSize:        32,
   markerTail:        true,
   borderRadius:      'var(--radius-lg)',
+  routeColor:        '#4F46E5',
+  routeWeight:       4,
 };

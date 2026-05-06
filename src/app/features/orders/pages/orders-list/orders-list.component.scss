@@ -158,3 +158,82 @@
   padding: 0; margin: -1px; overflow: hidden;
   clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .filters-bar {
+    flex-direction: column;
+    align-items:    stretch;
+    gap:            var(--space-3);
+  }
+
+  .filter-tabs {
+    overflow-x:  auto;
+    flex-wrap:   nowrap;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .filters-right {
+    flex-wrap: wrap;
+    gap:       var(--space-2);
+  }
+
+  .table-wrapper { border-radius: var(--radius-lg); overflow: hidden; }
+
+  /* Tabela → cards empilhados */
+  .data-table thead { display: none; }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td { display: block; width: 100%; box-sizing: border-box; }
+
+  .table-row {
+    padding:       var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+
+    &:last-child { border-bottom: none; }
+    &:hover td   { background: transparent; }
+
+    td { padding: 0; border: none; }
+
+    /* Linha 1: referência + badge de status lado a lado */
+    td:nth-child(1) {
+      display:         flex;
+      align-items:     center;
+      justify-content: space-between;
+      gap:             var(--space-2);
+      margin-bottom:   var(--space-2);
+      flex-wrap:       wrap;
+    }
+
+    /* Status — inline, não absoluto */
+    td:nth-child(2) {
+      position: static;
+      margin-bottom: var(--space-2);
+    }
+
+    /* Cidade */
+    td:nth-child(3) {
+      font-size:     var(--text-xs);
+      color:         var(--color-text-muted);
+      margin-bottom: var(--space-1);
+    }
+
+    /* Propostas + data em linha */
+    td:nth-child(4),
+    td:nth-child(5) {
+      display:      inline-block;
+      width:        auto;
+      margin-right: var(--space-3);
+      font-size:    var(--text-xs);
+    }
+
+    /* Ações */
+    td:nth-child(6) {
+      margin-top: var(--space-3);
+      .row-actions { justify-content: flex-start; }
+    }
+  }
+}

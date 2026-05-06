@@ -29,7 +29,7 @@ import { RolePanelService, PanelRole, PANEL_CONFIGS } from '../../services/role-
         aria-label="Alternar painel"
         (click)="toggleOpen()"
       >
-        <span class="role-trigger__icon">{{ panelService.currentConfig().icon }}</span>
+        <div class="role-trigger__dot" [class.role-trigger__dot--supplier]="panelService.isSupplier()"></div>
 
         <div class="role-trigger__text">
           <span class="role-trigger__label">{{ panelService.currentConfig().label }}</span>
@@ -39,10 +39,11 @@ import { RolePanelService, PanelRole, PANEL_CONFIGS } from '../../services/role-
         <svg
           class="role-trigger__chevron"
           [class.role-trigger__chevron--up]="open()"
-          width="14" height="14" viewBox="0 0 14 14" fill="none"
+          width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
           aria-hidden="true"
         >
-          <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M6 9l6 6 6-6"/>
         </svg>
       </button>
 
@@ -53,9 +54,7 @@ import { RolePanelService, PanelRole, PANEL_CONFIGS } from '../../services/role-
           role="listbox"
           aria-label="Selecionar painel"
         >
-          <div class="role-dropdown__header">
-            Alternar painel
-          </div>
+          <div class="role-dropdown__header">Alternar painel</div>
 
           @for (config of panels; track config.role) {
             <button
@@ -66,27 +65,31 @@ import { RolePanelService, PanelRole, PANEL_CONFIGS } from '../../services/role-
               [attr.aria-selected]="panelService.role() === config.role"
               (click)="selectRole(config.role)"
             >
-              <div class="role-option__icon" [style.background]="config.color + '20'" [style.color]="config.color">
-                {{ config.icon }}
+              <div class="role-option__icon" [style.background]="config.color + '18'" [style.color]="config.color">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path [attr.d]="config.icon"/>
+                </svg>
               </div>
               <div class="role-option__text">
                 <span class="role-option__label">{{ config.label }}</span>
                 <span class="role-option__desc">{{ config.description }}</span>
               </div>
               @if (panelService.role() === config.role) {
-                <span class="role-option__check" aria-hidden="true">✓</span>
+                <svg class="role-option__check" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">
+                  <path d="M5 13l4 4L19 7"/>
+                </svg>
               }
             </button>
           }
 
           <div class="role-dropdown__footer">
-            <span class="role-dropdown__hint">
-              A navegação muda conforme o painel selecionado
-            </span>
+            <span class="role-dropdown__hint">A navegação muda conforme o painel selecionado</span>
           </div>
         </div>
 
-        <!-- Backdrop para fechar ao clicar fora -->
         <div class="role-backdrop" (click)="close()"></div>
       }
 

@@ -20,26 +20,26 @@ type DetailTab = 'items' | 'proposals' | 'distribution' | 'history';
 const BANNER_MAP_CONFIG: MapConfig = {
   zoomControl:      true,
   dragging:         true,
-  scrollWheelZoom:  false,   // evita scroll acidental na página
+  scrollWheelZoom:  false,   /* evita scroll acidental na página */
   doubleClickZoom:  true,
   touchZoom:        true,
   keyboard:         false,
-  attribution:      true,
-  tileStyle:        'street',
-  fitBounds:        false,   // centraliza no ponto exato
-  markerSize:       32,
+  attribution:      false,
+  tileStyle:        'positron',
+  fitBounds:        false,
+  markerSize:       34,
   markerTail:       true,
-  borderRadius:     '0',     // full-width sem radius (o wrapper tem)
+  borderRadius:     '0',
 };
 
 const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
-  draft:      '#A8ABBE',
-  open:       '#0086C0',
-  in_auction: '#E2445C',
-  selected:   '#FFCB00',
-  confirmed:  '#00C875',
-  cancelled:  '#E2445C',
-  expired:    '#A8ABBE',
+  draft:      '#9CA3AF',
+  open:       '#2563EB',
+  in_auction: '#DC2626',
+  selected:   '#D97706',
+  confirmed:  '#059669',
+  cancelled:  '#DC2626',
+  expired:    '#9CA3AF',
 };
 
 @Component({

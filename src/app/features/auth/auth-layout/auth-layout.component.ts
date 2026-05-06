@@ -14,11 +14,9 @@ import { RouterOutlet } from '@angular/router';
   template: `
     <div class="auth-shell">
 
-      <!-- ── Painel esquerdo — branding ─────────────────── -->
       <aside class="auth-panel">
         <div class="auth-panel__inner">
 
-          <!-- Logo -->
           <div class="auth-panel__logo">
             <div class="logo-icon">
               <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
@@ -58,14 +56,22 @@ import { RouterOutlet } from '@angular/router';
           <!-- Floating cards decorativos -->
           <div class="auth-panel__cards" aria-hidden="true">
             <div class="deco-card deco-card--1">
-              <div class="deco-card__icon">🏗️</div>
+              <div class="deco-card__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                </svg>
+              </div>
               <div class="deco-card__text">
                 <strong>Pedido #EDQ-0042</strong>
                 <span>3 propostas recebidas</span>
               </div>
             </div>
             <div class="deco-card deco-card--2">
-              <div class="deco-card__icon">⚡</div>
+              <div class="deco-card__icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              </div>
               <div class="deco-card__text">
                 <strong>Proposta aceita</strong>
                 <span>R$ 1.250,00 · 2h entrega</span>

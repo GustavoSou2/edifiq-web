@@ -43,7 +43,9 @@ const CODE_LENGTH = 6;
       <!-- Error alert -->
       @if (authService.error()) {
         <div class="auth-alert auth-alert--error" role="alert">
-          <span class="auth-alert__icon">⚠️</span>
+          <span class="auth-alert__icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          </span>
           <span>{{ authService.error() }}</span>
         </div>
       }
@@ -51,7 +53,9 @@ const CODE_LENGTH = 6;
       <!-- Success alert -->
       @if (resendSuccess()) {
         <div class="auth-alert auth-alert--success" role="status">
-          <span class="auth-alert__icon">✅</span>
+          <span class="auth-alert__icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </span>
           <span>Novo código enviado! Verifique sua caixa de entrada.</span>
         </div>
       }

@@ -330,3 +330,56 @@
   color:       var(--color-text-muted);
   font-family: var(--font-mono);
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .map-banner { border-radius: var(--radius-lg); margin-bottom: var(--space-4); }
+
+  .map-banner__overlay { padding: var(--space-4); }
+
+  .map-banner__info {
+    flex-direction: column;
+    align-items:    flex-start;
+    gap:            var(--space-3);
+  }
+
+  .map-banner__city   { font-size: var(--text-lg); }
+  .map-banner__badges { justify-content: flex-start; }
+
+  .order-info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap:                   var(--space-3);
+    margin-bottom:         var(--space-5);
+  }
+
+  .info-card { padding: var(--space-3) var(--space-4); }
+
+  /* Tabs com scroll horizontal — sem overflow no conteúdo */
+  .tabs { gap: 0; }
+  .tab  { padding: var(--space-3) var(--space-3); font-size: var(--text-xs); }
+
+  /* Tabela de itens → cards */
+  .data-table thead { display: none; }
+
+  .data-table,
+  .data-table tbody,
+  .data-table tr,
+  .data-table td { display: block; width: 100%; }
+
+  .items-table-wrapper .data-table tr {
+    padding:       var(--space-4);
+    border-bottom: 1px solid var(--color-border);
+
+    &:last-child { border-bottom: none; }
+
+    td { padding: 0; border: none; margin-bottom: var(--space-1); }
+
+    td:nth-child(1) { display: none; } /* # oculto */
+    td:nth-child(2) { font-weight: 600; font-size: var(--text-sm); margin-bottom: var(--space-2); }
+    td:nth-child(3) { display: inline-block; width: auto; margin-right: var(--space-3); }
+    td:nth-child(4),
+    td:nth-child(5) { display: inline-block; width: auto; font-size: var(--text-xs); color: var(--color-text-muted); margin-right: var(--space-2); }
+  }
+
+  .tab-placeholder { padding: var(--space-8) var(--space-4); }
+}

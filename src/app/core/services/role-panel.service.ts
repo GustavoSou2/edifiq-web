@@ -15,15 +15,15 @@ export const PANEL_CONFIGS: Record<PanelRole, PanelConfig> = {
     role:        'buyer',
     label:       'Comprador',
     description: 'Crie pedidos e gerencie propostas',
-    color:       '#6C5CE7',
-    icon:        '🛒',
+    color:       '#4F46E5',
+    icon:        'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z',
   },
   supplier: {
     role:        'supplier',
     label:       'Fornecedor',
     description: 'Responda pedidos e gerencie entregas',
-    color:       '#00C875',
-    icon:        '🏭',
+    color:       '#059669',
+    icon:        'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
   },
 };
 

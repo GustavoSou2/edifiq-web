@@ -153,3 +153,24 @@
   color:     var(--color-text-secondary);
   margin:    0;
 }
+
+/* ── Mobile ───────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .info-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap:                   var(--space-3);
+    margin-bottom:         var(--space-5);
+  }
+
+  .info-card { padding: var(--space-3) var(--space-4); }
+
+  /* Tabs com scroll horizontal */
+  .tabs {
+    overflow-x:  auto;
+    flex-wrap:   nowrap;
+    scrollbar-width: none;
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .tab { white-space: nowrap; padding: var(--space-3) var(--space-3); font-size: var(--text-xs); }
+}

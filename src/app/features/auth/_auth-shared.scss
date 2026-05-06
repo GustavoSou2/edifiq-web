@@ -100,10 +100,10 @@
   &--success { background: var(--color-success-bg); border: 1px solid var(--color-success-border); color: var(--mn-green); }
 }
 
-.auth-alert__icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+.auth-alert__icon { display: flex; align-items: center; flex-shrink: 0; margin-top: 1px; }
 
 /* Form */
-.auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.auth-form { display: flex; flex-direction: column; gap: var(--space-1); }
 
 /* Footer */
 .auth-card__footer {

@@ -42,13 +42,13 @@ interface DashboardProposal {
 }
 
 const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
-  draft:      '#A8ABBE',
-  open:       '#0086C0',
-  in_auction: '#E2445C',
-  selected:   '#FFCB00',
-  confirmed:  '#00C875',
-  cancelled:  '#E2445C',
-  expired:    '#A8ABBE',
+  draft:      '#9CA3AF',
+  open:       '#2563EB',
+  in_auction: '#DC2626',
+  selected:   '#D97706',
+  confirmed:  '#059669',
+  cancelled:  '#DC2626',
+  expired:    '#9CA3AF',
 };
 
 const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
@@ -151,9 +151,10 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                     keyboard: false,
                     zoomControl: false,
                     attribution: false,
+                    tileStyle: 'positron_lite',
                     fitBounds: false,
                     markerColor: statusColor(order.status),
-                    markerSize: 26,
+                    markerSize: 28,
                     markerTail: true,
                     borderRadius: '0'
                   }"
@@ -191,6 +192,23 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
 
               <!-- ── Corpo do card (abaixo do banner) ──────────── -->
               <div class="ig-card__body">
+
+                <!-- Status + timer visíveis apenas no mobile (os do banner ficam ocultos) -->
+                <div class="ig-card__mobile-meta">
+                  <edq-status-badge [status]="order.status" />
+                  @if (order.is_urgent) {
+                    <span class="badge-urgent-sm">URGENTE</span>
+                  }
+                  @if (order.status === 'in_auction') {
+                    <span class="ig-card__timer-inline">⏱ Leilão ativo</span>
+                  }
+                </div>
+
+                <!-- Localização visível apenas no mobile -->
+                <div class="ig-card__mobile-location">
+                  <span>📍</span>
+                  <span>{{ order.delivery_city }}, {{ order.delivery_state }}</span>
+                </div>
 
                 <!-- Linha do autor (como o perfil no Instagram) -->
                 <div class="ig-card__author">
@@ -272,7 +290,7 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
               <span class="legend-dot dot-blue"></span> Aberto
             </span>
           </div>
-          <edq-map [markers]="mapMarkers()" [height]="280" />
+          <edq-map [markers]="mapMarkers()" [height]="280" [config]="{ tileStyle: 'positron', markerSize: 22, markerTail: false, attribution: false }" />
         </div>
 
         <!-- Propostas recentes -->
