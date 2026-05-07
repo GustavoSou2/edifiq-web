@@ -108,102 +108,35 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
         <!-- Cards grid estilo Instagram -->
         <div class="ig-feed">
           @for (order of filteredOrders(); track order.id) {
-            <article class="ig-card" [class.ig-card--urgent]="order.isUrgent">
+            <article class="ig-card">
 
-              <!-- ── Banner: mini-mapa da localização ─────────── -->
-              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" aria-label="Ver pedido {{ order.referenceCode }}">
-
-                <!-- Mapa estático como "foto" do post -->
-                <edq-map
-                  [lat]="order.deliveryLat ?? -23.5505"
-                  [lng]="order.deliveryLng ?? -46.6333"
-                  [height]="200"
-                  [zoom]="13"
-                  [config]="{
-                    dragging: false,
-                    scrollWheelZoom: false,
-                    doubleClickZoom: false,
-                    touchZoom: false,
-                    keyboard: false,
-                    zoomControl: false,
-                    attribution: false,
-                    tileStyle: 'positron_lite',
-                    fitBounds: false,
-                    markerColor: statusColor(order.status),
-                    markerSize: 28,
-                    markerTail: true,
-                    borderRadius: '0'
-                  }"
-                />
-
-                <!-- Overlay gradiente no topo -->
-                <div class="ig-card__banner-overlay"></div>
-
-                <!-- Badge de status flutuante (canto superior direito) -->
+              <!-- ── Banner ───────────────────────────────────── -->
+              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" [attr.aria-label]="'Ver pedido ' + order.title">
+                <div class="ig-card__banner-placeholder">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                </div>
                 <div class="ig-card__status-float">
                   <edq-status-badge [status]="order.status" />
-                  @if (order.isUrgent) {
-                    <span class="urgent-pill">🔥 URGENTE</span>
-                  }
                 </div>
-
-                <!-- Localização flutuante (canto inferior esquerdo) -->
-                <div class="ig-card__location-float">
-                  <span class="location-pin">📍</span>
-                  <div class="location-text">
-                    <span class="location-city">{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
-                    <span class="location-address">{{ order.deliveryAddress }}</span>
-                  </div>
-                </div>
-
-                <!-- Timer de leilão (se in_auction) -->
-                @if (order.status === 'in_auction') {
-                  <div class="ig-card__timer">
-                    <span class="timer-icon">⏱</span>
-                    <span class="timer-label">Leilão ativo</span>
-                  </div>
-                }
-
               </a>
 
-              <!-- ── Corpo do card (abaixo do banner) ──────────── -->
+              <!-- ── Corpo ─────────────────────────────────────── -->
               <div class="ig-card__body">
-
-                <!-- Status + timer visíveis apenas no mobile (os do banner ficam ocultos) -->
-                <div class="ig-card__mobile-meta">
-                  <edq-status-badge [status]="order.status" />
-                  @if (order.isUrgent) {
-                    <span class="badge-urgent-sm">URGENTE</span>
-                  }
-                  @if (order.status === 'in_auction') {
-                    <span class="ig-card__timer-inline">⏱ Leilão ativo</span>
-                  }
-                </div>
-
-                <!-- Localização visível apenas no mobile -->
-                <div class="ig-card__mobile-location">
-                  <span>📍</span>
-                  <span>{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
-                </div>
-
-                <!-- Linha do autor (como o perfil no Instagram) -->
                 <div class="ig-card__author">
                   <div class="author-avatar" [style.background]="statusColor(order.status)">
-                    {{ order.referenceCode?.slice(-2) }}
+                    {{ order.title.slice(0, 2).toUpperCase() }}
                   </div>
                   <div class="author-info">
-                    <span class="author-name">{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
+                    <span class="author-name">{{ order.title }}</span>
                     <span class="author-time">{{ order.createdAt | date:'dd/MM/yyyy · HH:mm' }}</span>
                   </div>
-                  <span class="ig-card__ref">{{ order.referenceCode }}</span>
                 </div>
 
-                <!-- Itens do pedido (como a legenda do post) -->
                 <div class="ig-card__items">
                   @for (item of (order.items ?? []).slice(0, 3); track item.id) {
                     <span class="item-chip">
                       <span class="item-chip__qty">{{ item.quantity }} {{ item.unit }}</span>
-                      {{ item.description }}
+                      {{ item.name }}
                     </span>
                   }
                   @if ((order.items?.length ?? 0) > 3) {
@@ -211,32 +144,12 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
                   }
                 </div>
 
-                <!-- Rodapé: ações (como curtir/comentar/compartilhar) -->
                 <div class="ig-card__actions">
-                  <div class="ig-card__actions-left">
-                    <!-- Propostas (como curtidas) -->
-                    <button class="ig-action" [class.ig-action--active]="(order.proposalCount ?? 0) > 0">
-                      <span class="ig-action__icon">💬</span>
-                      <span class="ig-action__count">{{ order.proposalCount }}</span>
-                      <span class="ig-action__label">proposta{{ order.proposalCount !== 1 ? 's' : '' }}</span>
-                    </button>
-                  </div>
-
-                  <a
-                    class="ig-card__cta"
-                    [routerLink]="['/app/orders', order.id]"
-                    [class.ig-card__cta--auction]="order.status === 'in_auction'"
-                  >
-                    @if (order.status === 'in_auction') {
-                      Ver propostas →
-                    } @else if (order.status === 'open') {
-                      Aguardando →
-                    } @else {
-                      Ver detalhes →
-                    }
+                  <div class="ig-card__actions-left"></div>
+                  <a class="ig-card__cta" [routerLink]="['/app/orders', order.id]">
+                    Ver detalhes →
                   </a>
                 </div>
-
               </div>
             </article>
           } @empty {
@@ -335,19 +248,7 @@ export class DashboardHomeComponent implements OnInit {
     return this.orders().filter(o => o.status === f);
   });
 
-  protected readonly mapMarkers = computed<MapMarker[]>(() =>
-    this.orders()
-      .filter((o): o is Order & { deliveryLat: number; deliveryLng: number } =>
-        o.deliveryLat != null && o.deliveryLng != null
-      )
-      .map(o => ({
-        lat:   o.deliveryLat,
-        lng:   o.deliveryLng,
-        label: o.referenceCode ?? o.id,
-        color: MAP_MARKER_COLOR[o.status],
-        popup: `${o.deliveryCity ?? ''}, ${o.deliveryState ?? ''}`,
-      }))
-  );
+  protected readonly mapMarkers = computed<MapMarker[]>(() => []);
 
   protected statusColor(status: OrderStatus): string {
     return STATUS_COLOR_MAP[status];

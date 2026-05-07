@@ -87,7 +87,8 @@ const SUPPLIER_SECONDARY_NAV: NavItem[] = [
         [class.sidebar--supplier]="rolePanel.isSupplier()"
         [class.mobile-open]="mobileMenuOpen()"
       >
-        <!-- Logo -->
+        <div>
+          <!-- Logo -->
         <div class="sidebar__logo">
           <div class="logo-mark">
             <svg width="16" height="16" viewBox="0 0 22 22" fill="none">
@@ -158,6 +159,7 @@ const SUPPLIER_SECONDARY_NAV: NavItem[] = [
             </a>
           }
         </nav>
+        </div>
 
         <!-- Footer -->
         <div class="sidebar__footer">

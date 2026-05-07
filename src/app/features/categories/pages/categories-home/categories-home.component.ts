@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map, tap } from 'rxjs';
 
 import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
@@ -215,7 +215,7 @@ export class CategoriesHomeComponent implements OnInit {
   private load(): void {
     this.isLoading.set(true);
     this.categoriesApi.listAll().subscribe({
-      next:  cats => { this.categories.set(cats); this.isLoading.set(false); },
+      next:  ({ _embedded: { categories: cats }}: any) => { this.categories.set(cats); this.isLoading.set(false); },
       error: ()   => { this.error.set('Erro ao carregar categorias.'); this.isLoading.set(false); },
     });
   }

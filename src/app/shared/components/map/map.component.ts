@@ -9,6 +9,7 @@ import {
   OnDestroy,
   SimpleChanges,
   ViewChild,
+  effect,
   input,
   output,
 } from '@angular/core';
@@ -162,7 +163,21 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
   private map!: L.Map;
   private markerLayer!: L.LayerGroup;
   private routeLayer!: L.LayerGroup;
+  private singleMarker: L.Marker | null = null;
   private initialized = false;
+
+  constructor() {
+    // Reage a mudanças de lat/lng via signal — funciona com OnPush no pai
+    effect(() => {
+      const lat = this.lat();
+      const lng = this.lng();
+      if (!this.initialized || !this.map) return;
+      if (lat !== null && lng !== null) {
+        this.map.flyTo([lat, lng], this.zoom(), { duration: 0.5 });
+        this.updateSingleMarker(lat, lng);
+      }
+    });
+  }
 
   get cfg(): Required<MapConfig> {
     return { ...DEFAULT_CONFIG, ...this.config() };
@@ -208,6 +223,18 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   clearMarkers(): void {
     this.markerLayer?.clearLayers();
+  }
+
+  private updateSingleMarker(lat: number, lng: number): void {
+    const cfg = this.cfg;
+    if (this.singleMarker) {
+      this.singleMarker.setLatLng([lat, lng]);
+    } else {
+      const icon = cfg.markerTail
+        ? this.buildPinIcon(cfg.markerColor, cfg.markerSize)
+        : this.buildDotIcon(cfg.markerColor, cfg.markerSize);
+      this.singleMarker = L.marker([lat, lng], { icon }).addTo(this.markerLayer);
+    }
   }
 
   /* ── Init ─────────────────────────────────────────────── */
@@ -288,7 +315,7 @@ export class MapComponent implements AfterViewInit, OnChanges, OnDestroy {
       ? this.buildPinIcon(color, size)
       : this.buildDotIcon(color, size);
 
-    L.marker([lat, lng], { icon }).addTo(this.markerLayer);
+    this.singleMarker = L.marker([lat, lng], { icon }).addTo(this.markerLayer);
   }
 
   /* ── Múltiplos marcadores (array) ────────────────────── */

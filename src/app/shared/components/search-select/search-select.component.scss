@@ -1,0 +1,120 @@
+/* ============================================================
+   Estilos do TRIGGER (dentro do componente)
+   ============================================================ */
+
+.ss-wrapper {
+  display:        flex;
+  flex-direction: column;
+  gap:            var(--space-2);
+  width:          100%;
+  position:       relative;
+}
+
+.ss-label {
+  font-family: var(--font-body);
+  font-size:   var(--text-sm);
+  font-weight: 600;
+  color:       var(--color-text-primary);
+  line-height: 1;
+}
+
+.ss-label__required {
+  color:       var(--mn-red);
+  margin-left: var(--space-1);
+}
+
+.ss-trigger {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             var(--space-2);
+  height:          36px;
+  padding:         0 var(--space-3);
+  background:      var(--color-surface);
+  border:          1px solid var(--color-border-strong);
+  border-radius:   var(--radius-md);
+  cursor:          pointer;
+  transition:      border-color var(--transition-base), box-shadow var(--transition-base);
+  user-select:     none;
+
+  &:hover:not(.ss-trigger--disabled) { border-color: var(--mn-purple); }
+
+  &--open {
+    border-color: var(--mn-purple);
+    box-shadow:   var(--focus-ring);
+  }
+
+  &--disabled {
+    background:     var(--color-surface-alt);
+    cursor:         not-allowed;
+    opacity:        0.6;
+    pointer-events: none;
+  }
+}
+
+.ss-trigger__content {
+  flex:      1;
+  min-width: 0;
+  overflow:  hidden;
+}
+
+.ss-trigger__selected {
+  font-size:     var(--text-base);
+  color:         var(--color-text-primary);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+  display:       block;
+}
+
+.ss-trigger__placeholder {
+  font-size: var(--text-base);
+  color:     var(--color-text-muted);
+}
+
+.ss-trigger__icons {
+  display:     flex;
+  align-items: center;
+  gap:         var(--space-1);
+  flex-shrink: 0;
+}
+
+.ss-clear-btn {
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  width:           20px;
+  height:          20px;
+  background:      transparent;
+  border:          none;
+  cursor:          pointer;
+  color:           var(--color-text-muted);
+  border-radius:   var(--radius-full);
+  transition:      all var(--transition-fast);
+
+  &:hover { background: var(--color-surface-alt); color: var(--color-text-primary); }
+}
+
+.ss-chevron {
+  color:       var(--color-text-muted);
+  transition:  transform var(--transition-base);
+  flex-shrink: 0;
+
+  &--open { transform: rotate(180deg); }
+}
+
+.ss-hint-text {
+  font-size:   var(--text-xs);
+  color:       var(--color-text-muted);
+  line-height: 1.4;
+
+  &--error { color: var(--mn-red); }
+}
+
+/* Variants */
+.ss-wrapper--error .ss-trigger {
+  border-color: var(--mn-red);
+  &.ss-trigger--open { box-shadow: var(--focus-ring-danger); }
+}
+
+.ss-wrapper--success .ss-trigger { border-color: var(--mn-green); }

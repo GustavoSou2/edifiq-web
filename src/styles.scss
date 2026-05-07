@@ -243,3 +243,168 @@ a {
 .dot-teal   { background: var(--mn-teal); }
 .dot-orange { background: var(--mn-orange); }
 .dot-gray   { background: var(--color-text-muted); }
+
+/* ============================================================
+   SearchSelect — Portal Dropdown (renderizado no body)
+   ============================================================ */
+
+.ss-portal-dropdown {
+  background:    var(--color-surface);
+  border:        1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow:    0 8px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+  overflow:      hidden;
+  display:       flex;
+  flex-direction: column;
+  animation:     ss-drop-in 0.15s ease;
+}
+
+@keyframes ss-drop-in {
+  from { opacity: 0; transform: translateY(-6px) scaleY(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scaleY(1); }
+}
+
+/* Search bar */
+.ss-portal-dropdown .ss-search {
+  display:       flex;
+  align-items:   center;
+  gap:           8px;
+  padding:       8px 12px;
+  border-bottom: 1px solid var(--color-border);
+  background:    var(--color-surface-alt);
+  flex-shrink:   0;
+
+  svg:first-child { color: var(--color-text-muted); flex-shrink: 0; }
+}
+
+.ss-portal-dropdown .ss-search__input {
+  flex:        1;
+  border:      none;
+  outline:     none;
+  background:  transparent;
+  font-family: var(--font-body);
+  font-size:   14px;
+  color:       var(--color-text-primary);
+  min-width:   0;
+
+  &::placeholder { color: var(--color-text-muted); }
+}
+
+.ss-portal-dropdown .ss-search__spinner {
+  color:     var(--mn-purple);
+  flex-shrink: 0;
+  animation: ss-spin 0.8s linear infinite;
+}
+
+@keyframes ss-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Options list */
+.ss-portal-dropdown .ss-options {
+  overflow-y: auto;
+  flex:       1;
+  padding:    4px 0;
+
+  &::-webkit-scrollbar       { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+}
+
+.ss-portal-dropdown .ss-option {
+  display:         flex;
+  align-items:     center;
+  justify-content: space-between;
+  gap:             12px;
+  padding:         8px 16px;
+  cursor:          pointer;
+  transition:      background 0.1s;
+
+  &:hover,
+  &.ss-option--focused { background: var(--color-surface-alt); }
+
+  &.ss-option--selected {
+    background: var(--color-primary-light);
+
+    .ss-option__label { color: var(--color-primary); font-weight: 600; }
+  }
+}
+
+.ss-portal-dropdown .ss-option__content {
+  display:        flex;
+  flex-direction: column;
+  gap:            2px;
+  min-width:      0;
+}
+
+.ss-portal-dropdown .ss-option__label {
+  font-size:     14px;
+  color:         var(--color-text-primary);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.ss-portal-dropdown .ss-option__sublabel {
+  font-family:   var(--font-mono);
+  font-size:     11px;
+  color:         var(--color-text-muted);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+.ss-portal-dropdown .ss-option__check {
+  color:       var(--color-primary);
+  flex-shrink: 0;
+}
+
+/* Highlight */
+.ss-portal-dropdown .ss-highlight {
+  background:    var(--color-primary-light);
+  color:         var(--color-primary);
+  border-radius: 2px;
+  font-weight:   600;
+  padding:       0 1px;
+}
+
+/* Skeleton */
+.ss-portal-dropdown .ss-skeleton {
+  display:        flex;
+  flex-direction: column;
+  gap:            4px;
+  padding:        10px 16px;
+}
+
+.ss-portal-dropdown .ss-skeleton__line {
+  border-radius: 4px;
+  background:    linear-gradient(
+    90deg,
+    var(--color-surface-alt) 25%,
+    var(--color-border)      50%,
+    var(--color-surface-alt) 75%
+  );
+  background-size: 200% 100%;
+  animation:       ss-shimmer 1.4s ease infinite;
+
+  &--main { height: 14px; width: 70%; }
+  &--sub  { height: 10px; width: 40%; }
+}
+
+@keyframes ss-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Empty / Hint */
+.ss-portal-dropdown .ss-empty,
+.ss-portal-dropdown .ss-hint {
+  display:         flex;
+  align-items:     center;
+  gap:             12px;
+  padding:         16px;
+  font-size:       14px;
+  color:           var(--color-text-muted);
+  justify-content: center;
+}

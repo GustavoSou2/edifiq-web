@@ -16,6 +16,7 @@
   background:     var(--mn-sidebar-bg);
   display:        flex;
   flex-direction: column;
+  justify-content: space-between;
   position:       fixed;
   left: 0; top: 0; bottom: 0;
   z-index:        200;
@@ -85,7 +86,6 @@
   flex-direction: column;
   gap:            1px;
   padding:        var(--space-2) var(--space-2);
-  flex:           1;
   overflow-y:     auto;
   overflow-x:     hidden;
 }

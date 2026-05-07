@@ -1,39 +1,28 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
+import { DatePipe } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 
-import { PageHeaderComponent }    from '../../../../shared/components/page-header/page-header.component';
-import { ButtonComponent }        from '../../../../shared/components/button/button.component';
-import { InputComponent }         from '../../../../shared/components/input/input.component';
-import { ToastService }           from '../../../../shared/services/toast.service';
-import { CategoriesApiService }   from '../../../../core/services/api/categories-api.service';
+import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
+import { ButtonComponent }      from '../../../../shared/components/button/button.component';
+import { InputComponent }       from '../../../../shared/components/input/input.component';
+import { ToastService }         from '../../../../shared/services/toast.service';
 import { OrdersApiService, CreateOrderPayload } from '../../../../core/services/api/orders-api.service';
-import { Category }               from '../../../../shared/types/domain.types';
 
 type Step = 1 | 2 | 3;
 
 interface OrderItemForm {
-  description: string;
-  quantity:    string;
-  unit:        string;
-  categoryId:  string;
-}
-
-interface ViaCepResponse {
-  logradouro: string;
-  bairro:     string;
-  localidade: string;
-  uf:         string;
-  erro?:      boolean;
+  name:     string;
+  quantity: string;
+  unit:     string;
+  notes:    string;
 }
 
 const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx', 'rolo', 'par', 'pç'];
@@ -42,9 +31,9 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
   selector: 'edq-order-create',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, PageHeaderComponent, ButtonComponent, InputComponent],
+  imports: [FormsModule, RouterLink, DatePipe, PageHeaderComponent, ButtonComponent, InputComponent],
   template: `
-    <edq-page-header title="Novo Pedido" subtitle="Preencha os dados para iniciar o leilão">
+    <edq-page-header title="Novo Pedido" subtitle="Preencha os dados para criar o pedido">
       <edq-button slot="actions" variant="secondary" size="sm" routerLink="../">Cancelar</edq-button>
     </edq-page-header>
 
@@ -92,15 +81,13 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
               </div>
 
               <div class="item-card__body">
-                <div class="item-card__desc">
-                  <edq-input
-                    label="Descrição do material"
-                    placeholder="Ex: Saco de Cimento CP-II 50kg"
-                    [variant]="submitted() && !item.description ? 'error' : 'default'"
-                    [hint]="submitted() && !item.description ? 'Campo obrigatório' : ''"
-                    [(value)]="item.description"
-                  />
-                </div>
+                <edq-input
+                  label="Nome do material"
+                  placeholder="Ex: Cimento CP-II 50kg"
+                  [variant]="submitted() && !item.name ? 'error' : 'default'"
+                  [hint]="submitted() && !item.name ? 'Campo obrigatório' : ''"
+                  [(value)]="item.name"
+                />
 
                 <div class="item-card__row">
                   <edq-input
@@ -132,28 +119,11 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
                     }
                   </div>
 
-                  <div class="field-group">
-                    <label class="field-label">Categoria</label>
-                    <div class="unit-select-wrapper">
-                      <select
-                        class="unit-select"
-                        [(ngModel)]="item.categoryId"
-                        [class.unit-select--error]="submitted() && !item.categoryId"
-                        aria-label="Categoria do item {{ i + 1 }}"
-                      >
-                        <option value="" disabled>Selecione</option>
-                        @if (categoriesLoading()) {
-                          <option disabled>Carregando...</option>
-                        }
-                        @for (cat of categories(); track cat.id) {
-                          <option [value]="cat.id">{{ cat.name }}</option>
-                        }
-                      </select>
-                    </div>
-                    @if (submitted() && !item.categoryId) {
-                      <span class="field-hint field-hint--error">Selecione a categoria</span>
-                    }
-                  </div>
+                  <edq-input
+                    label="Observações (opcional)"
+                    placeholder="Marca, especificação..."
+                    [(value)]="item.notes"
+                  />
                 </div>
               </div>
             </div>
@@ -167,113 +137,125 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
       </div>
     }
 
-    <!-- ── Step 2 — Entrega ───────────────────────────────── -->
+    <!-- ── Step 2 — Detalhes ──────────────────────────────── -->
     @if (currentStep() === 2) {
-      <div class="form-section" aria-label="Passo 2: Endereço de entrega">
-        <h2 class="form-section__title">Endereço de Entrega</h2>
-        <p class="form-section__desc">Onde os materiais devem ser entregues?</p>
+      <div class="form-section" aria-label="Passo 2: Detalhes do pedido">
+        <h2 class="form-section__title">Detalhes do Pedido</h2>
+        <p class="form-section__desc">Informações gerais sobre o pedido.</p>
 
-        <div class="cep-row">
-          <div class="cep-field">
-            <edq-input
-              label="CEP"
-              placeholder="00000-000"
-              [variant]="cepError() ? 'error' : 'default'"
-              [hint]="cepError()"
-              [(value)]="delivery.cep"
+        <div class="details-grid">
+          <edq-input
+            label="Título do pedido"
+            placeholder="Ex: Materiais para obra Fase 2"
+            [variant]="submitted() && !title ? 'error' : 'default'"
+            [hint]="submitted() && !title ? 'Campo obrigatório' : ''"
+            [(value)]="title"
+          />
+
+          <div class="notes-field">
+            <label class="field-label">Descrição (opcional)</label>
+            <textarea
+              class="notes-textarea"
+              placeholder="Informações adicionais sobre o pedido, contexto da obra..."
+              [(ngModel)]="description"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label">Data de agendamento (opcional)</label>
+            <p class="field-desc">Quando os materiais precisam ser entregues</p>
+            <input
+              type="datetime-local"
+              class="unit-select"
+              [(ngModel)]="scheduledAt"
+              aria-label="Data de agendamento"
             />
           </div>
-          <edq-button
-            variant="secondary"
-            size="sm"
-            [loading]="cepLoading()"
-            (clicked)="lookupCep()"
-          >
-            Buscar CEP
-          </edq-button>
-        </div>
-
-        <div class="form-grid">
-          <edq-input
-            label="Endereço completo"
-            placeholder="Rua, número, bairro"
-            [variant]="submitted() && !delivery.address ? 'error' : 'default'"
-            [hint]="submitted() && !delivery.address ? 'Campo obrigatório' : ''"
-            [(value)]="delivery.address"
-          />
-          <edq-input
-            label="Cidade"
-            placeholder="São Paulo"
-            [variant]="submitted() && !delivery.city ? 'error' : 'default'"
-            [hint]="submitted() && !delivery.city ? 'Campo obrigatório' : ''"
-            [(value)]="delivery.city"
-          />
-          <div class="field-group">
-            <label class="field-label">Estado</label>
-            <div class="unit-select-wrapper">
-              <select
-                class="unit-select"
-                [(ngModel)]="delivery.state"
-                [class.unit-select--error]="submitted() && !delivery.state"
-                aria-label="Estado"
-              >
-                <option value="" disabled>UF</option>
-                @for (uf of ufs; track uf) {
-                  <option [value]="uf">{{ uf }}</option>
-                }
-              </select>
-            </div>
-            @if (submitted() && !delivery.state) {
-              <span class="field-hint field-hint--error">Selecione o estado</span>
-            }
-          </div>
-        </div>
-
-        <div class="urgency-toggle" [class.urgency-toggle--active]="isUrgent">
-          <label class="toggle-label">
-            <input type="checkbox" [(ngModel)]="isUrgent" />
-            <div class="toggle-track">
-              <div class="toggle-thumb"></div>
-            </div>
-            <div class="toggle-text">
-              <strong>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                Pedido Urgente
-              </strong>
-              <span>Fornecedores serão notificados com prioridade máxima</span>
-            </div>
-          </label>
-        </div>
-
-        <div class="notes-field">
-          <label class="field-label">Observações (opcional)</label>
-          <textarea
-            class="notes-textarea"
-            placeholder="Informações adicionais para os fornecedores, restrições de acesso, horários de entrega..."
-            [(ngModel)]="notes"
-            rows="3"
-          ></textarea>
         </div>
       </div>
     }
 
-    <!-- ── Step 3 — Leilão ────────────────────────────────── -->
+    <!-- ── Step 3 — Agendamento ──────────────────────────── -->
     @if (currentStep() === 3) {
-      <div class="form-section" aria-label="Passo 3: Configuração do leilão">
-        <h2 class="form-section__title">Configuração do Leilão</h2>
-        <p class="form-section__desc">Defina as regras de competição entre fornecedores.</p>
+      <div class="form-section" aria-label="Passo 3: Agendamento e configurações">
+        <h2 class="form-section__title">Agendamento e Configurações</h2>
+        <p class="form-section__desc">Defina quando e como os fornecedores devem responder.</p>
 
         <div class="config-grid">
-          <div class="field-group">
-            <label class="field-label">Duração do Leilão</label>
-            <p class="field-desc">Quanto tempo os fornecedores têm para enviar propostas</p>
+
+          <!-- Janela de entrega -->
+          <div class="config-block">
+            <h3 class="config-block__title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Janela de Entrega
+            </h3>
+            <p class="config-block__desc">Período em que os materiais devem ser entregues</p>
+
+            <div class="window-row">
+              <div class="field-group">
+                <label class="field-label">
+                  Data/hora mínima
+                  <span class="required-mark">*</span>
+                </label>
+                <input
+                  type="datetime-local"
+                  class="unit-select"
+                  [(ngModel)]="deliveryWindowStart"
+                  [class.unit-select--error]="submitted() && !deliveryWindowStart"
+                  aria-label="Data/hora mínima de entrega"
+                />
+                @if (submitted() && !deliveryWindowStart) {
+                  <span class="field-hint field-hint--error">Campo obrigatório</span>
+                }
+              </div>
+
+              <div class="window-separator">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label">Data/hora máxima <span class="optional-mark">(opcional)</span></label>
+                <input
+                  type="datetime-local"
+                  class="unit-select"
+                  [(ngModel)]="deliveryWindowEnd"
+                  aria-label="Data/hora máxima de entrega"
+                />
+                <span class="field-hint">Define o range de entrega quando informado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Urgência -->
+          <div class="urgency-toggle" [class.urgency-toggle--active]="isUrgent">
+            <label class="toggle-label">
+              <input type="checkbox" [(ngModel)]="isUrgent" />
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+              <div class="toggle-text">
+                <strong>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Pedido Urgente
+                </strong>
+                <span>Fornecedores serão notificados com prioridade máxima</span>
+              </div>
+            </label>
+          </div>
+
+          <!-- Tempo de resposta -->
+          <div class="config-block">
+            <h3 class="config-block__title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Tempo de Resposta
+            </h3>
+            <p class="config-block__desc">Quanto tempo os fornecedores têm para enviar propostas</p>
             <div class="chip-options">
               @for (opt of durationOptions; track opt.value) {
                 <button
                   type="button"
                   class="chip"
-                  [class.chip--active]="auctionDuration() === opt.value"
-                  (click)="auctionDuration.set(opt.value)"
+                  [class.chip--active]="auctionDurationMin() === opt.value"
+                  (click)="auctionDurationMin.set(opt.value)"
                 >
                   {{ opt.label }}
                 </button>
@@ -281,9 +263,13 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
             </div>
           </div>
 
-          <div class="field-group">
-            <label class="field-label">Máximo de Fornecedores</label>
-            <p class="field-desc">Limite de fornecedores que podem participar</p>
+          <!-- Máximo de fornecedores -->
+          <div class="config-block">
+            <h3 class="config-block__title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+              Máximo de Fornecedores
+            </h3>
+            <p class="config-block__desc">Limite de fornecedores que serão notificados</p>
             <div class="chip-options">
               @for (opt of supplierOptions; track opt.value) {
                 <button
@@ -298,47 +284,65 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
             </div>
           </div>
 
-          <edq-input
-            label="Código de referência (opcional)"
-            placeholder="Ex: OBRA-2025-001"
-            [(value)]="referenceCode"
-          />
-        </div>
+          <!-- Campos opcionais -->
+          <div class="optional-fields">
+            <edq-input
+              label="Código de referência (opcional)"
+              placeholder="Ex: OBRA-2025-001"
+              [(value)]="referenceCode"
+            />
 
-        <!-- Resumo -->
-        <div class="summary-card">
-          <div class="summary-card__title">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Resumo do Pedido
+            <div class="notes-field">
+              <label class="field-label">Observações gerais (opcional)</label>
+              <textarea
+                class="notes-textarea"
+                placeholder="Informações adicionais para os fornecedores..."
+                [(ngModel)]="notes"
+                rows="3"
+              ></textarea>
+            </div>
           </div>
-          <div class="summary-rows">
-            <div class="summary-row">
-              <span>Itens</span>
-              <strong>{{ items().length }} item{{ items().length !== 1 ? 's' : '' }}</strong>
+
+          <!-- Resumo -->
+          <div class="summary-card">
+            <div class="summary-card__title">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Resumo do Pedido
             </div>
-            <div class="summary-row">
-              <span>Entrega</span>
-              <strong>{{ delivery.city || '—' }}{{ delivery.state ? ', ' + delivery.state : '' }}</strong>
-            </div>
-            <div class="summary-row">
-              <span>Urgente</span>
-              <strong [class.text-danger]="isUrgent">{{ isUrgent ? '⚡ Sim' : 'Não' }}</strong>
-            </div>
-            <div class="summary-row">
-              <span>Duração do leilão</span>
-              <strong>{{ durationLabel() }}</strong>
-            </div>
-            <div class="summary-row">
-              <span>Fornecedores</span>
-              <strong>até {{ maxSuppliers() }}</strong>
-            </div>
-            @if (referenceCode) {
+            <div class="summary-rows">
               <div class="summary-row">
-                <span>Referência</span>
-                <strong>{{ referenceCode }}</strong>
+                <span>Título</span>
+                <strong>{{ title }}</strong>
               </div>
-            }
+              <div class="summary-row">
+                <span>Itens</span>
+                <strong>{{ items().length }} item{{ items().length !== 1 ? 's' : '' }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>Entrega a partir de</span>
+                <strong>{{ deliveryWindowStart ? (deliveryWindowStart | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+              </div>
+              @if (deliveryWindowEnd) {
+                <div class="summary-row">
+                  <span>Entrega até</span>
+                  <strong>{{ deliveryWindowEnd | date:'dd/MM/yyyy HH:mm' }}</strong>
+                </div>
+              }
+              <div class="summary-row">
+                <span>Urgente</span>
+                <strong [class.text-danger]="isUrgent">{{ isUrgent ? '⚡ Sim' : 'Não' }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>Tempo de resposta</span>
+                <strong>{{ durationLabel() }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>Fornecedores</span>
+                <strong>até {{ maxSuppliers() }}</strong>
+              </div>
+            </div>
           </div>
+
         </div>
       </div>
     }
@@ -362,19 +366,17 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
       } @else {
         <edq-button variant="primary" [loading]="isSubmitting()" (clicked)="handleSubmit()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-          Publicar Pedido
+          Criar Pedido
         </edq-button>
       }
     </div>
   `,
   styleUrl: './order-create.component.scss',
 })
-export class OrderCreateComponent implements OnInit {
-  private readonly categoriesApi = inject(CategoriesApiService);
-  private readonly ordersApi     = inject(OrdersApiService);
-  private readonly toast         = inject(ToastService);
-  private readonly router        = inject(Router);
-  private readonly http          = inject(HttpClient);
+export class OrderCreateComponent {
+  private readonly ordersApi = inject(OrdersApiService);
+  private readonly toast     = inject(ToastService);
+  private readonly router    = inject(Router);
 
   /* ── Step ───────────────────────────────────────────────── */
   protected readonly currentStep  = signal<Step>(1);
@@ -384,38 +386,29 @@ export class OrderCreateComponent implements OnInit {
   protected readonly steps = [
     { id: 1, label: 'Itens' },
     { id: 2, label: 'Entrega' },
-    { id: 3, label: 'Configurar' },
+    { id: 3, label: 'Agendamento' },
   ];
-
-  /* ── Categories ─────────────────────────────────────────── */
-  protected readonly categories       = signal<Category[]>([]);
-  protected readonly categoriesLoading = signal(false);
 
   /* ── Items ──────────────────────────────────────────────── */
   protected readonly items = signal<OrderItemForm[]>([
-    { description: '', quantity: '1', unit: '', categoryId: '' },
+    { name: '', quantity: '1', unit: '', notes: '' },
   ]);
 
   protected readonly unitOptions = UNIT_OPTIONS;
 
-  /* ── Delivery ───────────────────────────────────────────── */
-  protected delivery = { cep: '', address: '', city: '', state: '' };
-  protected isUrgent = false;
-  protected notes    = '';
+  /* ── Order details ──────────────────────────────────────── */
+  protected title       = '';
+  protected description = '';
+  protected scheduledAt = '';
 
-  protected readonly cepLoading = signal(false);
-  protected readonly cepError   = signal('');
-
-  protected readonly ufs = [
-    'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS',
-    'MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC',
-    'SP','SE','TO',
-  ];
-
-  /* ── Auction config ─────────────────────────────────────── */
-  protected readonly auctionDuration = signal(60);
-  protected readonly maxSuppliers    = signal(5);
-  protected referenceCode            = '';
+  /* ── Scheduling & auction config ────────────────────────── */
+  protected deliveryWindowStart = '';
+  protected deliveryWindowEnd   = '';
+  protected isUrgent            = false;
+  protected readonly auctionDurationMin = signal(60);
+  protected readonly maxSuppliers       = signal(10);
+  protected referenceCode = '';
+  protected notes         = '';
 
   protected readonly durationOptions = [
     { value: 30,  label: '30 min' },
@@ -426,84 +419,29 @@ export class OrderCreateComponent implements OnInit {
   ];
 
   protected readonly supplierOptions = [
-    { value: 3,  label: '3' },
     { value: 5,  label: '5' },
     { value: 10, label: '10' },
     { value: 20, label: '20' },
+    { value: 50, label: '50' },
   ];
 
   protected readonly durationLabel = computed(() => {
-    const opt = this.durationOptions.find(o => o.value === this.auctionDuration());
-    return opt?.label ?? `${this.auctionDuration()} min`;
+    const opt = this.durationOptions.find(o => o.value === this.auctionDurationMin());
+    return opt?.label ?? `${this.auctionDurationMin()} min`;
   });
 
-  /* ── Lifecycle ──────────────────────────────────────────── */
-  ngOnInit(): void {
-    this.loadCategories();
-  }
-
-  private async loadCategories(): Promise<void> {
-    this.categoriesLoading.set(true);
-    try {
-      const cats = await firstValueFrom(this.categoriesApi.listAll());
-      this.categories.set(cats);
-    } catch {
-      this.toast.error('Não foi possível carregar as categorias.');
-    } finally {
-      this.categoriesLoading.set(false);
-    }
-  }
-
-  /* ── CEP lookup ─────────────────────────────────────────── */
-  async lookupCep(): Promise<void> {
-    const cep = this.delivery.cep.replace(/\D/g, '');
-    if (cep.length !== 8) {
-      this.cepError.set('CEP inválido. Informe 8 dígitos.');
-      return;
-    }
-
-    this.cepLoading.set(true);
-    this.cepError.set('');
-
-    try {
-      const data = await firstValueFrom(
-        this.http.get<ViaCepResponse>(`https://viacep.com.br/ws/${cep}/json/`),
-      );
-
-      if (data.erro) {
-        this.cepError.set('CEP não encontrado.');
-        return;
-      }
-
-      this.delivery.address = `${data.logradouro}${data.bairro ? ', ' + data.bairro : ''}`;
-      this.delivery.city    = data.localidade;
-      this.delivery.state   = data.uf;
-    } catch {
-      this.cepError.set('Erro ao buscar CEP. Tente novamente.');
-    } finally {
-      this.cepLoading.set(false);
-    }
+  /* ── Validation ─────────────────────────────────────────── */
+  isItemValid(item: OrderItemForm): boolean {
+    return item.name.trim().length > 0 && +item.quantity > 0 && item.unit.length > 0;
   }
 
   /* ── Items ──────────────────────────────────────────────── */
   addItem(): void {
-    this.items.update(list => [
-      ...list,
-      { description: '', quantity: '1', unit: '', categoryId: '' },
-    ]);
+    this.items.update(list => [...list, { name: '', quantity: '1', unit: '', notes: '' }]);
   }
 
   removeItem(index: number): void {
     this.items.update(list => list.filter((_, i) => i !== index));
-  }
-
-  isItemValid(item: OrderItemForm): boolean {
-    return (
-      item.description.trim().length > 0 &&
-      +item.quantity > 0 &&
-      item.unit.length > 0 &&
-      item.categoryId.length > 0
-    );
   }
 
   /* ── Navigation ─────────────────────────────────────────── */
@@ -511,16 +449,22 @@ export class OrderCreateComponent implements OnInit {
     this.submitted.set(true);
 
     if (this.currentStep() === 1) {
-      const allValid = this.items().every(item => this.isItemValid(item));
-      if (!allValid) {
+      if (!this.items().every(item => this.isItemValid(item))) {
         this.toast.error('Preencha todos os campos dos itens antes de continuar.');
         return;
       }
     }
 
     if (this.currentStep() === 2) {
-      if (!this.delivery.address || !this.delivery.city || !this.delivery.state) {
-        this.toast.error('Preencha o endereço completo antes de continuar.');
+      if (!this.title.trim()) {
+        this.toast.error('Informe o título do pedido.');
+        return;
+      }
+    }
+
+    if (this.currentStep() === 3) {
+      if (!this.deliveryWindowStart) {
+        this.toast.error('Informe a data/hora mínima de entrega.');
         return;
       }
     }
@@ -536,38 +480,38 @@ export class OrderCreateComponent implements OnInit {
 
   /* ── Submit ─────────────────────────────────────────────── */
   async handleSubmit(): Promise<void> {
-    this.submitted.set(true);
     this.isSubmitting.set(true);
 
     const payload: CreateOrderPayload = {
-      deliveryAddress:   this.delivery.address,
-      deliveryCity:      this.delivery.city,
-      deliveryState:     this.delivery.state,
-      isUrgent:          this.isUrgent,
-      auctionDurationMin: this.auctionDuration(),
-      maxSuppliers:      this.maxSuppliers(),
-      referenceCode:     this.referenceCode || undefined,
-      notes:             this.notes || undefined,
+      title:                this.title.trim(),
+      description:          this.description.trim() || null,
+      deliveryWindowStart:  new Date(this.deliveryWindowStart).toISOString(),
+      deliveryWindowEnd:    this.deliveryWindowEnd ? new Date(this.deliveryWindowEnd).toISOString() : null,
+      isUrgent:             this.isUrgent,
+      auctionDurationMin:   this.auctionDurationMin(),
+      maxSuppliers:         this.maxSuppliers(),
+      referenceCode:        this.referenceCode.trim() || null,
+      notes:                this.notes.trim() || null,
       items: this.items().map((item, i) => ({
-        categoryId:  item.categoryId,
-        description: item.description,
+        description: item.name.trim(),
+        unit:        item.unit || null,
         quantity:    +item.quantity,
-        unit:        item.unit,
-        sortOrder:   i + 1,
+        notes:       item.notes.trim() || null,
+        sortOrder:   i,
       })),
     };
 
-    const loadingId = this.toast.loading('Publicando pedido...');
+    const loadingId = this.toast.loading('Criando pedido...');
 
     try {
       const order = await firstValueFrom(this.ordersApi.create(payload));
       this.toast.dismiss(loadingId);
-      this.toast.success('Pedido publicado!', { message: 'Fornecedores já foram notificados.' });
+      this.toast.success('Pedido criado!', { message: 'Publique para notificar os fornecedores.' });
       await this.router.navigate(['/app/orders', order.id]);
     } catch (err: any) {
       this.toast.dismiss(loadingId);
       this.toast.error(
-        err?.message ?? 'Erro ao publicar o pedido.',
+        err?.message ?? 'Erro ao criar o pedido.',
         { message: 'Verifique os dados e tente novamente.' },
       );
     } finally {

@@ -80,41 +80,30 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
         <table class="data-table" aria-label="Lista de pedidos">
           <thead>
             <tr>
-              <th scope="col">Referência</th>
+              <th scope="col">Título</th>
               <th scope="col">Status</th>
-              <th scope="col">Cidade</th>
-              <th scope="col">Propostas</th>
+              <th scope="col">Itens</th>
               <th scope="col">Criado em</th>
               <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
           </thead>
           <tbody>
             @for (order of filteredOrders(); track order.id) {
-              <tr class="table-row" [class.table-row--urgent]="order.isUrgent">
+              <tr class="table-row">
                 <td>
                   <div class="ref-cell">
-                    <span class="ref-code">{{ order.referenceCode }}</span>
-                    @if (order.isUrgent) {
-                      <span class="badge-urgent">URGENTE</span>
-                    }
+                    <span class="ref-code">{{ order.title }}</span>
                   </div>
                 </td>
                 <td><edq-status-badge [status]="order.status" /></td>
-                <td class="city-cell">📍 {{ order.deliveryCity }}, {{ order.deliveryState }}</td>
+                <td class="city-cell">{{ order.items?.length ?? 0 }} item(s)</td>
                 <td>
-                  <span class="proposal-count" [class.proposal-count--zero]="!order.proposalCount">
-                    {{ order.proposalCount ?? 0 }}
-                  </span>
+                  <span class="proposal-count">—</span>
                 </td>
                 <td class="date-cell">{{ order.createdAt | date:'dd/MM/yyyy' }}</td>
                 <td>
                   <div class="row-actions">
                     <edq-button variant="ghost" size="sm" [routerLink]="[order.id]">Ver</edq-button>
-                    @if (order.status === 'in_auction') {
-                      <edq-button variant="primary" size="sm" [routerLink]="[order.id, 'proposals']">
-                        Propostas
-                      </edq-button>
-                    }
                   </div>
                 </td>
               </tr>
@@ -165,13 +154,9 @@ export class OrdersListComponent implements OnInit {
     let list = this.orders();
     const status = this.activeStatus();
     if (status !== 'all') list = list.filter(o => o.status === status);
-    if (this.urgentOnly)  list = list.filter(o => o.isUrgent);
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
-      list = list.filter(o =>
-        o.referenceCode?.toLowerCase().includes(q) ||
-        o.deliveryCity?.toLowerCase().includes(q),
-      );
+      list = list.filter(o => o.title?.toLowerCase().includes(q));
     }
     return list;
   });

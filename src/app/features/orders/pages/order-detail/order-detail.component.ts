@@ -166,7 +166,7 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
                   </tr>
                 </thead>
                 <tbody>
-                  @for (item of order().items ?? []; track item.id; let i = $index) {
+                  @for (item of order()?.items ?? []; track item.id; let i = $index) {
                     <tr>
                       <td class="mono">{{ i + 1 }}</td>
                       <td>{{ item.description }}</td>

@@ -20,17 +20,17 @@ export class CategoriesApiService extends ApiService {
 
   /** Lista todas as categorias (árvore completa) */
   listAll(): Observable<Category[]> {
-    return this.get<Category[]>('/categories');
+    return this.getRaw<Category[]>('/categories');
   }
 
   /** Lista apenas categorias raiz (sem parent) */
   listRoots(): Observable<Category[]> {
-    return this.get<Category[]>('/categories', { root: true });
+    return this.getRaw<Category[]>('/categories', { root: true });
   }
 
   /** Lista filhas de uma categoria */
   listChildren(parentId: string): Observable<Category[]> {
-    return this.get<Category[]>(`/categories/${parentId}/children`);
+    return this.getRaw<Category[]>(`/categories/${parentId}/children`);
   }
 
   /** Cria uma categoria */
@@ -46,5 +46,10 @@ export class CategoriesApiService extends ApiService {
   /** Remove uma categoria */
   remove(id: string): Observable<void> {
     return this.delete<void>(`/categories/${id}`);
+  }
+
+  /** Busca categorias por nome (para autocomplete) */
+  search(query: string): Observable<Category[]> {
+    return this.getRaw<Category[]>('/categories/search', { q: query });
   }
 }

@@ -135,41 +135,23 @@ export interface Supplier {
 
 /* ── order_items ────────────────────────────────────────────*/
 export interface OrderItem {
-  id:          string;
-  orderId:     OrderId;
-  categoryId:  string | null;
-  category?:   Category;
-  description: string;
-  quantity:    number;
-  unit:        string;
-  notes:       string | null;
-  sortOrder:   number;
+  id:       string;
+  orderId?: OrderId;
+  name:     string;       // campo real do backend
+  unit:     string;
+  quantity: number;
+  notes:    string | null;
 }
 
 /* ── orders ─────────────────────────────────────────────────*/
 export interface Order {
-  id:                OrderId;
-  tenantId:          TenantId;
-  createdBy:         UserId;
-  status:            OrderStatus;
-  isUrgent:          boolean;
-  deliveryAddress:   string;
-  deliveryCity:      string | null;
-  deliveryState:     string | null;
-  deliveryLat:       number | null;
-  deliveryLng:       number | null;
-  maxSuppliers:      number;
-  auctionDurationMin: number;
-  expiresAt:         string | null;
-  publishedAt:       string | null;
-  createdAt:         string;
-  updatedAt:         string;
-  notes:             string | null;
-  referenceCode:     string | null;
-  metadata:          Record<string, unknown>;
-  items?:            OrderItem[];
-  proposals?:        Proposal[];
-  proposalCount?:    number;
+  id:          OrderId;
+  title:       string;
+  description: string | null;
+  status:      OrderStatus;
+  scheduledAt: string | null;
+  createdAt:   string;
+  items?:      OrderItem[];
 }
 
 /* ── proposals ──────────────────────────────────────────────*/

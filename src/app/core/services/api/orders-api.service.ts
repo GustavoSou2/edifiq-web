@@ -2,41 +2,49 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from '../api.service';
-import {
-  Order,
-  OrderItem,
-  OrderFilters,
-  PaginatedResponse,
-} from '../../../shared/types/domain.types';
+import { Order, OrderItem, OrderFilters, PaginatedResponse } from '../../../shared/types/domain.types';
+
+/* ── Request payloads ───────────────────────────────────────*/
 
 export interface CreateOrderPayload {
-  deliveryAddress:    string;
-  deliveryCity:       string;
-  deliveryState:      string;
-  deliveryLat?:       number;
-  deliveryLng?:       number;
-  isUrgent:           boolean;
-  auctionDurationMin: number;
-  maxSuppliers:       number;
-  referenceCode?:     string;
-  notes?:             string;
+  title:                string;
+  description?:         string | null;
+  scheduledAt?:         string | null;
+  deliveryAddress?:     string | null;
+  deliveryCity?:        string | null;
+  deliveryState?:       string | null;
+  deliveryLat?:         number | null;
+  deliveryLng?:         number | null;
+  deliveryWindowStart:  string;           // ISO-8601, obrigatório
+  deliveryWindowEnd?:   string | null;
+  isUrgent?:            boolean;
+  auctionDurationMin?:  number;
+  maxSuppliers?:        number;
+  referenceCode?:       string | null;
+  notes?:               string | null;
   items: {
-    categoryId:  string;
     description: string;
     quantity:    number;
-    unit:        string;
+    categoryId?: string | null;
+    unit?:       string | null;
+    notes?:      string | null;
     sortOrder?:  number;
   }[];
 }
 
-export interface PublishOrderPayload {
-  expiresAt?: string;
+export interface SelectProposalPayload {
+  proposalId: string;
+}
+
+export interface CreateRatingPayload {
+  score:    number;
+  comment?: string | null;
 }
 
 @Injectable({ providedIn: 'root' })
 export class OrdersApiService extends ApiService {
 
-  /** Lista pedidos com filtros e paginação */
+  /** Lista pedidos do tenant */
   list(filters?: OrderFilters): Observable<PaginatedResponse<Order>> {
     return this.get<PaginatedResponse<Order>>('/orders', filters as Record<string, unknown>);
   }
@@ -46,33 +54,48 @@ export class OrdersApiService extends ApiService {
     return this.get<Order>(`/orders/${id}`);
   }
 
-  /** Cria um novo pedido (status: draft) */
+  /** Cria um novo pedido */
   create(payload: CreateOrderPayload): Observable<Order> {
     return this.post<Order>('/orders', payload);
   }
 
-  /** Atualiza um pedido em rascunho */
-  update(id: string, payload: Partial<CreateOrderPayload>): Observable<Order> {
-    return this.put<Order>(`/orders/${id}`, payload);
+  /** Publica o pedido (distribui para fornecedores) */
+  publish(id: string): Observable<unknown> {
+    return this.post<unknown>(`/orders/${id}/publish`, {});
   }
 
-  /** Publica o pedido (draft → open → in_auction) */
-  publish(id: string, payload?: PublishOrderPayload): Observable<Order> {
-    return this.post<Order>(`/orders/${id}/publish`, payload ?? {});
+  /** Lista distribuições de um pedido */
+  listDistributions(id: string): Observable<unknown[]> {
+    return this.get<unknown[]>(`/orders/${id}/distributions`);
   }
 
-  /** Cancela um pedido */
-  cancel(id: string, reason?: string): Observable<Order> {
-    return this.post<Order>(`/orders/${id}/cancel`, { reason });
+  /** Lista propostas de um pedido */
+  listProposals(id: string): Observable<unknown[]> {
+    return this.get<unknown[]>(`/orders/${id}/proposals`);
   }
 
-  /** Lista os itens de um pedido */
-  listItems(orderId: string): Observable<OrderItem[]> {
-    return this.get<OrderItem[]>(`/orders/${orderId}/items`);
+  /** Seleciona uma proposta */
+  selectProposal(orderId: string, payload: SelectProposalPayload): Observable<unknown> {
+    return this.post<unknown>(`/orders/${orderId}/select`, payload);
   }
 
-  /** Exclui um pedido em rascunho */
-  remove(id: string): Observable<void> {
-    return this.delete<void>(`/orders/${id}`);
+  /** Busca a seleção de um pedido */
+  getSelection(orderId: string): Observable<unknown> {
+    return this.get<unknown>(`/orders/${orderId}/selection`);
+  }
+
+  /** Busca a entrega de um pedido */
+  getDelivery(orderId: string): Observable<unknown> {
+    return this.get<unknown>(`/orders/${orderId}/delivery`);
+  }
+
+  /** Avalia o fornecedor após entrega */
+  rate(orderId: string, payload: CreateRatingPayload): Observable<unknown> {
+    return this.post<unknown>(`/orders/${orderId}/rate`, payload);
+  }
+
+  /** Lista itens de proposta */
+  listProposalItems(orderId: string, proposalId: string): Observable<unknown[]> {
+    return this.get<unknown[]>(`/orders/${orderId}/proposals/${proposalId}/items`);
   }
 }

@@ -77,37 +77,29 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
 
       <div class="orders-grid">
         @for (order of filteredOrders(); track order.id) {
-          <div class="order-card" [class.order-card--urgent]="order.isUrgent">
+          <div class="order-card">
 
             <div class="order-card__header">
               <div class="order-card__ref-row">
-                <span class="order-card__ref">{{ order.referenceCode }}</span>
-                @if (order.isUrgent) {
-                  <span class="badge-urgent">URGENTE</span>
-                }
+                <span class="order-card__ref">{{ order.title }}</span>
               </div>
               <edq-status-badge [status]="order.status" />
             </div>
 
             <p class="order-card__items">
-              {{ order.items?.map(i => i.description)?.join(', ') || '—' }}
+              {{ order.items?.map(i => i.name)?.join(', ') || '—' }}
             </p>
 
-            <div class="order-card__location">
-              <span>📍</span>
-              <span>{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
-            </div>
-
-            @if (order.expiresAt) {
+            @if (order.scheduledAt) {
               <div class="order-card__auction">
-                <span class="order-card__auction-icon">⏱️</span>
-                <span>Leilão encerra em {{ order.expiresAt | date:'dd/MM · HH:mm' }}</span>
+                <span class="order-card__auction-icon">📅</span>
+                <span>Agendado para {{ order.scheduledAt | date:'dd/MM · HH:mm' }}</span>
               </div>
             }
 
             <div class="order-card__footer">
               <span class="order-card__proposals">
-                {{ order.proposalCount ?? 0 }} proposta{{ (order.proposalCount ?? 0) !== 1 ? 's' : '' }}
+                {{ order.items?.length ?? 0 }} item{{ (order.items?.length ?? 0) !== 1 ? 's' : '' }}
               </span>
               <edq-button variant="primary" size="sm" [routerLink]="[order.id]">
                 Enviar Proposta
@@ -155,13 +147,9 @@ export class AvailableOrdersListComponent implements OnInit {
     let list = this.orders();
     const status = this.activeStatus();
     if (status !== 'all') list = list.filter(o => o.status === status);
-    if (this.urgentOnly)  list = list.filter(o => o.isUrgent);
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
-      list = list.filter(o =>
-        o.referenceCode?.toLowerCase().includes(q) ||
-        o.deliveryCity?.toLowerCase().includes(q),
-      );
+      list = list.filter(o => o.title?.toLowerCase().includes(q));
     }
     return list;
   });

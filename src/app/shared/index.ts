@@ -9,6 +9,8 @@ export { PageHeaderComponent }  from './components/page-header/page-header.compo
 export { StatCardComponent }    from './components/stat-card/stat-card.component';
 export { StatusBadgeComponent } from './components/status-badge/status-badge.component';
 export { MapComponent }         from './components/map/map.component';
+export { SearchSelectComponent } from './components/search-select/search-select.component';
+export type { SearchSelectOption } from './components/search-select/search-select.component';
 export { ToastContainerComponent } from './components/toast/toast-container.component';
 export { ToastItemComponent }      from './components/toast/toast-item.component';
 export { ToastService }            from './services/toast.service';
