@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   inject,
   signal,
@@ -8,21 +9,25 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, map } from 'rxjs';
 
 import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
 import { InputComponent }       from '../../../../shared/components/input/input.component';
+import { SearchSelectComponent, SearchSelectOption } from '../../../../shared/components/search-select/search-select.component';
 import { ToastService }         from '../../../../shared/services/toast.service';
 import { OrdersApiService, CreateOrderPayload } from '../../../../core/services/api/orders-api.service';
+import { CategoriesApiService } from '../../../../core/services/api/categories-api.service';
+import type { Category } from '@shared';
 
 type Step = 1 | 2 | 3;
 
 interface OrderItemForm {
-  name:     string;
-  quantity: string;
-  unit:     string;
-  notes:    string;
+  name:       string;
+  quantity:   string;
+  unit:       string;
+  notes:      string;
+  categoryId: string;
 }
 
 const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx', 'rolo', 'par', 'pç'];
@@ -31,7 +36,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
   selector: 'edq-order-create',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, DatePipe, PageHeaderComponent, ButtonComponent, InputComponent],
+  imports: [FormsModule, RouterLink, DatePipe, PageHeaderComponent, ButtonComponent, InputComponent, SearchSelectComponent],
   template: `
     <edq-page-header title="Novo Pedido" subtitle="Preencha os dados para criar o pedido">
       <edq-button slot="actions" variant="secondary" size="sm" routerLink="../">Cancelar</edq-button>
@@ -81,13 +86,24 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
               </div>
 
               <div class="item-card__body">
-                <edq-input
-                  label="Nome do material"
-                  placeholder="Ex: Cimento CP-II 50kg"
-                  [variant]="submitted() && !item.name ? 'error' : 'default'"
-                  [hint]="submitted() && !item.name ? 'Campo obrigatório' : ''"
-                  [(value)]="item.name"
-                />
+                <div class="item-card__top-row">
+                  <edq-input
+                    label="Nome do material"
+                    placeholder="Ex: Cimento CP-II 50kg"
+                    [variant]="submitted() && !item.name ? 'error' : 'default'"
+                    [hint]="submitted() && !item.name ? 'Campo obrigatório' : ''"
+                    [(value)]="item.name"
+                  />
+
+                  <edq-search-select
+                    label="Categoria (opcional)"
+                    placeholder="Selecione a categoria"
+                    searchPlaceholder="Buscar categoria..."
+                    [options]="categoryOptions()"
+                    [loading]="categoryLoading()"
+                    [(value)]="item.categoryId"
+                  />
+                </div>
 
                 <div class="item-card__row">
                   <edq-input
@@ -137,11 +153,11 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
       </div>
     }
 
-    <!-- ── Step 2 — Detalhes ──────────────────────────────── -->
+    <!-- ── Step 2 — Entrega ───────────────────────────────── -->
     @if (currentStep() === 2) {
-      <div class="form-section" aria-label="Passo 2: Detalhes do pedido">
-        <h2 class="form-section__title">Detalhes do Pedido</h2>
-        <p class="form-section__desc">Informações gerais sobre o pedido.</p>
+      <div class="form-section" aria-label="Passo 2: Data de entrega">
+        <h2 class="form-section__title">Data de Entrega</h2>
+        <p class="form-section__desc">Quando você precisa receber os materiais?</p>
 
         <div class="details-grid">
           <edq-input
@@ -152,8 +168,26 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
             [(value)]="title"
           />
 
+          <div class="field-group">
+            <label class="field-label">
+              Data de entrega desejada
+              <span class="required-mark">*</span>
+            </label>
+            <p class="field-desc">Data a partir da qual você quer receber os materiais</p>
+            <input
+              type="datetime-local"
+              class="unit-select"
+              [(ngModel)]="deliveryDate"
+              [class.unit-select--error]="submitted() && !deliveryDate"
+              aria-label="Data de entrega desejada"
+            />
+            @if (submitted() && !deliveryDate) {
+              <span class="field-hint field-hint--error">Campo obrigatório</span>
+            }
+          </div>
+
           <div class="notes-field">
-            <label class="field-label">Descrição (opcional)</label>
+            <label class="field-label">Observações (opcional)</label>
             <textarea
               class="notes-textarea"
               placeholder="Informações adicionais sobre o pedido, contexto da obra..."
@@ -161,26 +195,15 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
               rows="3"
             ></textarea>
           </div>
-
-          <div class="field-group">
-            <label class="field-label">Data de agendamento (opcional)</label>
-            <p class="field-desc">Quando os materiais precisam ser entregues</p>
-            <input
-              type="datetime-local"
-              class="unit-select"
-              [(ngModel)]="scheduledAt"
-              aria-label="Data de agendamento"
-            />
-          </div>
         </div>
       </div>
     }
 
-    <!-- ── Step 3 — Agendamento ──────────────────────────── -->
+    <!-- ── Step 3 — Janela de Tempo ──────────────────────── -->
     @if (currentStep() === 3) {
-      <div class="form-section" aria-label="Passo 3: Agendamento e configurações">
-        <h2 class="form-section__title">Agendamento e Configurações</h2>
-        <p class="form-section__desc">Defina quando e como os fornecedores devem responder.</p>
+      <div class="form-section" aria-label="Passo 3: Janela de entrega e configurações">
+        <h2 class="form-section__title">Janela de Entrega e Configurações</h2>
+        <p class="form-section__desc">Defina o período de entrega e como os fornecedores devem responder.</p>
 
         <div class="config-grid">
 
@@ -319,12 +342,16 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
                 <strong>{{ items().length }} item{{ items().length !== 1 ? 's' : '' }}</strong>
               </div>
               <div class="summary-row">
-                <span>Entrega a partir de</span>
+                <span>Entrega desejada</span>
+                <strong>{{ deliveryDate ? (deliveryDate | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
+              </div>
+              <div class="summary-row">
+                <span>Janela a partir de</span>
                 <strong>{{ deliveryWindowStart ? (deliveryWindowStart | date:'dd/MM/yyyy HH:mm') : '—' }}</strong>
               </div>
               @if (deliveryWindowEnd) {
                 <div class="summary-row">
-                  <span>Entrega até</span>
+                  <span>Janela até</span>
                   <strong>{{ deliveryWindowEnd | date:'dd/MM/yyyy HH:mm' }}</strong>
                 </div>
               }
@@ -373,7 +400,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
   `,
   styleUrl: './order-create.component.scss',
 })
-export class OrderCreateComponent {
+export class OrderCreateComponent implements OnInit {
   private readonly ordersApi = inject(OrdersApiService);
   private readonly toast     = inject(ToastService);
   private readonly router    = inject(Router);
@@ -386,20 +413,27 @@ export class OrderCreateComponent {
   protected readonly steps = [
     { id: 1, label: 'Itens' },
     { id: 2, label: 'Entrega' },
-    { id: 3, label: 'Agendamento' },
+    { id: 3, label: 'Janela' },
   ];
 
   /* ── Items ──────────────────────────────────────────────── */
   protected readonly items = signal<OrderItemForm[]>([
-    { name: '', quantity: '1', unit: '', notes: '' },
+    { name: '', quantity: '1', unit: '', notes: '', categoryId: '' },
   ]);
 
   protected readonly unitOptions = UNIT_OPTIONS;
 
+  /* ── Categories (search-select) ─────────────────────────── */
+  private readonly categoriesApi = inject(CategoriesApiService);
+
+  /** Lista única compartilhada por todos os itens */
+  protected readonly categoryOptions = signal<SearchSelectOption[]>([]);
+  protected readonly categoryLoading = signal(false);
+
   /* ── Order details ──────────────────────────────────────── */
   protected title       = '';
   protected description = '';
-  protected scheduledAt = '';
+  protected deliveryDate = '';  // Step 2: data de entrega desejada
 
   /* ── Scheduling & auction config ────────────────────────── */
   protected deliveryWindowStart = '';
@@ -430,6 +464,17 @@ export class OrderCreateComponent {
     return opt?.label ?? `${this.auctionDurationMin()} min`;
   });
 
+  ngOnInit(): void {
+    this.categoryLoading.set(true);
+    firstValueFrom(this.categoriesApi.listAll().pipe(map((r: any)=> r._embedded.categories))).then(cats => {
+      this.categoryOptions.set(cats.map((c: Category) => ({ value: c.id, label: c.name })));
+    }).catch(() => {
+      // campo é opcional, silencia o erro
+    }).finally(() => {
+      this.categoryLoading.set(false);
+    });
+  }
+
   /* ── Validation ─────────────────────────────────────────── */
   isItemValid(item: OrderItemForm): boolean {
     return item.name.trim().length > 0 && +item.quantity > 0 && item.unit.length > 0;
@@ -437,7 +482,7 @@ export class OrderCreateComponent {
 
   /* ── Items ──────────────────────────────────────────────── */
   addItem(): void {
-    this.items.update(list => [...list, { name: '', quantity: '1', unit: '', notes: '' }]);
+    this.items.update(list => [...list, { name: '', quantity: '1', unit: '', notes: '', categoryId: '' }]);
   }
 
   removeItem(index: number): void {
@@ -458,6 +503,10 @@ export class OrderCreateComponent {
     if (this.currentStep() === 2) {
       if (!this.title.trim()) {
         this.toast.error('Informe o título do pedido.');
+        return;
+      }
+      if (!this.deliveryDate) {
+        this.toast.error('Informe a data de entrega desejada.');
         return;
       }
     }
@@ -485,7 +534,7 @@ export class OrderCreateComponent {
     const payload: CreateOrderPayload = {
       title:                this.title.trim(),
       description:          this.description.trim() || null,
-      deliveryWindowStart:  new Date(this.deliveryWindowStart).toISOString(),
+      deliveryWindowStart:  new Date(this.deliveryWindowStart || this.deliveryDate).toISOString(),
       deliveryWindowEnd:    this.deliveryWindowEnd ? new Date(this.deliveryWindowEnd).toISOString() : null,
       isUrgent:             this.isUrgent,
       auctionDurationMin:   this.auctionDurationMin(),
@@ -497,6 +546,7 @@ export class OrderCreateComponent {
         unit:        item.unit || null,
         quantity:    +item.quantity,
         notes:       item.notes.trim() || null,
+        categoryId:  item.categoryId || null,
         sortOrder:   i,
       })),
     };

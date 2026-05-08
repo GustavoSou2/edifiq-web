@@ -176,6 +176,12 @@
   gap:            var(--space-3);
 }
 
+.item-card__top-row {
+  display:               grid;
+  grid-template-columns: 1fr 1fr;
+  gap:                   var(--space-3);
+}
+
 .item-card__row {
   display:               grid;
   grid-template-columns: 110px 1fr 1fr;
@@ -425,6 +431,10 @@
   .item-card__row {
     grid-template-columns: 1fr 1fr;
     & > *:first-child { grid-column: 1 / -1; }
+  }
+
+  .item-card__top-row {
+    grid-template-columns: 1fr;
   }
 
   .form-nav {
