@@ -527,7 +527,6 @@ export class OrderCreateComponent implements OnInit {
     if (this.currentStep() > 1) this.currentStep.update(s => (s - 1) as Step);
   }
 
-  /* ── Submit ─────────────────────────────────────────────── */
   async handleSubmit(): Promise<void> {
     this.isSubmitting.set(true);
 

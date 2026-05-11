@@ -23,15 +23,13 @@ const MOCK_WEBHOOKS: Partial<Webhook>[] = [
     id: 'wh1',
     url: 'https://minha-api.com/webhooks/edifiq',
     events: ['order.created', 'delivery.confirmed'],
-    isActive:  true,
-    createdAt: '2024-01-10T00:00:00Z',
+    active: true,
   },
   {
     id: 'wh2',
     url: 'https://erp.empresa.com/hooks/orders',
     events: ['order.created', 'order.cancelled'],
-    isActive:  false,
-    createdAt: '2024-01-05T00:00:00Z',
+    active: false,
   },
 ];
 
@@ -100,12 +98,12 @@ const MOCK_WEBHOOKS: Partial<Webhook>[] = [
                 <div class="webhook-item__actions">
                   <button
                     class="status-toggle"
-                    [class.status-toggle--active]="wh.isActive"
+                    [class.status-toggle--active]="wh.active"
                     (click)="toggleWebhook(wh)"
-                    [attr.aria-label]="wh.isActive ? 'Desativar webhook' : 'Ativar webhook'"
+                    [attr.aria-label]="wh.active ? 'Desativar webhook' : 'Ativar webhook'"
                   >
                     <span class="status-toggle__dot"></span>
-                    {{ wh.isActive ? 'Ativo' : 'Inativo' }}
+                    {{ wh.active ? 'Ativo' : 'Inativo' }}
                   </button>
                   <edq-button variant="ghost" size="sm" (clicked)="removeWebhook(wh)">Remover</edq-button>
                 </div>
@@ -141,11 +139,10 @@ export class SettingsWebhooksComponent {
     this.webhooks.update(list => [
       ...list,
       {
-        id:        `wh${Date.now()}`,
-        url:       this.newUrl,
-        events:    [...this.newEvents],
-        isActive:  true,
-        createdAt: new Date().toISOString(),
+        id:     `wh${Date.now()}`,
+        url:    this.newUrl,
+        events: [...this.newEvents],
+        active: true,
       },
     ]);
     this.newUrl    = '';
@@ -155,7 +152,7 @@ export class SettingsWebhooksComponent {
 
   protected toggleWebhook(wh: Partial<Webhook>): void {
     this.webhooks.update(list =>
-      list.map(w => w.id === wh.id ? { ...w, isActive: !w.isActive } : w),
+      list.map(w => w.id === wh.id ? { ...w, active: !w.active } : w),
     );
   }
 

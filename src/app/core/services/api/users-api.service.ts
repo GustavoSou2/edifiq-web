@@ -5,6 +5,7 @@ import { ApiService } from '../api.service';
 import {
   User,
   Role,
+  UserRole,
   PaginatedResponse,
   PaginationParams,
 } from '../../../shared/types/domain.types';
@@ -16,9 +17,7 @@ export interface InviteUserPayload {
 }
 
 export interface UpdateUserPayload {
-  name?:     string;
-  phone?:    string;
-  isActive?: boolean;
+  active?: boolean;
 }
 
 export interface CreateRolePayload {
@@ -26,63 +25,84 @@ export interface CreateRolePayload {
   permissions: string[];
 }
 
+export interface GrantRolePayload {
+  userId: string;
+  roleId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class UsersApiService extends ApiService {
 
-  /** Lista usuários do tenant */
+  /* ── Users ──────────────────────────────────────────────── */
+
+  /** Lista usuários do tenant — GET /v1/users */
   list(params?: PaginationParams & { search?: string }): Observable<PaginatedResponse<User>> {
-    return this.get<PaginatedResponse<User>>('/users', params as Record<string, unknown>);
+    return this.get<PaginatedResponse<User>>('/v1/users', params as Record<string, unknown>);
   }
 
-  /** Busca um usuário pelo ID */
+  /** Busca um usuário pelo ID — GET /v1/users/:id */
   findById(id: string): Observable<User> {
-    return this.get<User>(`/users/${id}`);
+    return this.get<User>(`/v1/users/${id}`);
   }
 
-  /** Convida um novo usuário */
+  /** Convida um novo usuário — POST /v1/users */
   invite(payload: InviteUserPayload): Observable<User> {
-    return this.post<User>('/users/invite', payload);
+    return this.post<User>('/v1/users', { email: payload.email });
   }
 
-  /** Atualiza dados de um usuário */
-  update(id: string, payload: UpdateUserPayload): Observable<User> {
-    return this.patch<User>(`/users/${id}`, payload);
-  }
-
-  /** Ativa/desativa um usuário */
+  /** Ativa/desativa um usuário — PATCH /v1/users/:id */
   toggleActive(id: string, active: boolean): Observable<User> {
-    return this.patch<User>(`/users/${id}`, { isActive: active });
-  }
-
-  /** Remove um usuário */
-  remove(id: string): Observable<void> {
-    return this.delete<void>(`/users/${id}`);
+    return this.patch<User>(`/v1/users/${id}`, { active });
   }
 
   /* ── Roles ──────────────────────────────────────────────── */
 
-  /** Lista roles do tenant */
+  /** Lista roles do tenant — GET /v1/roles */
   listRoles(): Observable<Role[]> {
-    return this.get<Role[]>('/roles');
+    return this.get<Role[]>('/v1/roles');
   }
 
-  /** Cria uma role customizada */
+  /** Cria uma role customizada — POST /v1/roles */
   createRole(payload: CreateRolePayload): Observable<Role> {
-    return this.post<Role>('/roles', payload);
+    return this.post<Role>('/v1/roles', payload);
   }
 
-  /** Atualiza uma role */
+  /** Atualiza uma role — PUT /v1/roles/:id */
   updateRole(id: string, payload: Partial<CreateRolePayload>): Observable<Role> {
-    return this.put<Role>(`/roles/${id}`, payload);
+    return this.put<Role>(`/v1/roles/${id}`, payload);
   }
 
-  /** Remove uma role */
+  /** Remove uma role — DELETE /v1/roles/:id */
   removeRole(id: string): Observable<void> {
-    return this.delete<void>(`/roles/${id}`);
+    return this.delete<void>(`/v1/roles/${id}`);
   }
 
-  /** Atribui roles a um usuário */
-  assignRoles(userId: string, roleIds: string[]): Observable<User> {
-    return this.put<User>(`/users/${userId}/roles`, { roleIds });
+  /* ── User-Roles (associações) ───────────────────────────── */
+
+  /**
+   * Lista todas as associações user↔role do tenant.
+   * GET /v1/user-roles
+   *
+   * Para saber as roles de um usuário específico, filtre pelo userId:
+   * `userRoles.filter(ur => ur.userId === userId)`
+   */
+  listUserRoles(): Observable<UserRole[]> {
+    return this.get<UserRole[]>('/v1/user-roles');
+  }
+
+  /**
+   * Concede uma role a um usuário.
+   * POST /v1/user-roles — body: { userId, roleId }
+   */
+  grantRole(payload: GrantRolePayload): Observable<UserRole> {
+    return this.post<UserRole>('/v1/user-roles', payload);
+  }
+
+  /**
+   * Revoga uma role de um usuário.
+   * DELETE /v1/user-roles/:id  (id da associação UserRole, não do usuário)
+   */
+  revokeRole(userRoleId: string): Observable<void> {
+    return this.delete<void>(`/v1/user-roles/${userRoleId}`);
   }
 }

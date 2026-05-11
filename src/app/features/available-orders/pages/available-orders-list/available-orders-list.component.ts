@@ -14,7 +14,7 @@ import { PageHeaderComponent }  from '../../../../shared/components/page-header/
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
 import { InputComponent }       from '../../../../shared/components/input/input.component';
-import { Order, OrderStatus }   from '../../../../shared/types/domain.types';
+import { Order, OrderSummary, OrderStatus }   from '../../../../shared/types/domain.types';
 import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
 
 const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
@@ -87,19 +87,19 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
             </div>
 
             <p class="order-card__items">
-              {{ order.items?.map(i => i.name)?.join(', ') || '—' }}
+              {{ order.deliveryCity ? '📍 ' + order.deliveryCity + ', ' + order.deliveryState : '—' }}
             </p>
 
-            @if (order.scheduledAt) {
+            @if (order.deliveryCity) {
               <div class="order-card__auction">
                 <span class="order-card__auction-icon">📅</span>
-                <span>Agendado para {{ order.scheduledAt | date:'dd/MM · HH:mm' }}</span>
+                <span>{{ order.createdAt | date:'dd/MM/yyyy' }}</span>
               </div>
             }
 
             <div class="order-card__footer">
               <span class="order-card__proposals">
-                {{ order.items?.length ?? 0 }} item{{ (order.items?.length ?? 0) !== 1 ? 's' : '' }}
+                {{ order.isUrgent ? '🔥 Urgente' : 'Normal' }}
               </span>
               <edq-button variant="primary" size="sm" [routerLink]="[order.id]">
                 Enviar Proposta
@@ -126,7 +126,7 @@ export class AvailableOrdersListComponent implements OnInit {
   protected searchQuery            = '';
   protected urgentOnly             = false;
 
-  protected readonly orders    = signal<Order[]>([]);
+  protected readonly orders    = signal<OrderSummary[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly error     = signal<string | null>(null);
 

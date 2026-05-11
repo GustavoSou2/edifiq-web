@@ -1,7 +1,7 @@
 /**
  * Edifiq — Domain Types
- * Baseado no schema real do banco (DDL) com campos em camelCase
- * conforme serialização padrão do backend Java.
+ * Baseado nos response records dos controllers do edifiq-api.
+ * Reflete exatamente o que a API retorna via JSON.
  */
 
 /* ── IDs ────────────────────────────────────────────────────*/
@@ -11,8 +11,11 @@ export type OrderId    = string;
 export type SupplierId = string;
 export type ProposalId = string;
 export type DeliveryId = string;
+export type RoleId     = string;
 
-/* ── Enums de Status ────────────────────────────────────────*/
+/* ── Enums ──────────────────────────────────────────────────*/
+
+/** Order.Status */
 export type OrderStatus =
   | 'draft'
   | 'open'
@@ -22,14 +25,33 @@ export type OrderStatus =
   | 'cancelled'
   | 'expired';
 
+/** Proposal.Status */
 export type ProposalStatus =
-  | 'pending'
   | 'submitted'
-  | 'accepted'
-  | 'rejected'
-  | 'expired'
+  | 'updated'
   | 'withdrawn';
 
+/** ProposalItem.Availability */
+export type ProposalItemAvailability =
+  | 'in_stock'
+  | 'backorder'
+  | 'unavailable';
+
+/** OrderDistribution.Status */
+export type OrderDistributionStatus =
+  | 'pending'
+  | 'queued'
+  | 'processing'
+  | 'sent'
+  | 'failed'
+  | 'delivered'
+  | 'expired'
+  | 'declined';
+
+/** OrderSelection.Status */
+export type OrderSelectionStatus = 'selected' | 'cancelled';
+
+/** Delivery.Status */
 export type DeliveryStatus =
   | 'scheduled'
   | 'in_transit'
@@ -37,8 +59,10 @@ export type DeliveryStatus =
   | 'failed'
   | 'returned';
 
+/** Supplier.Status */
 export type SupplierStatus = 'active' | 'inactive' | 'blocked';
 
+/** Tenant.Status */
 export type TenantStatus = 'trial' | 'active' | 'suspended' | 'cancelled';
 
 /* ── plans ──────────────────────────────────────────────────*/
@@ -51,222 +75,240 @@ export interface Plan {
   hasAnalytics:      boolean;
   hasApiAccess:      boolean;
   priceMonthly:      number;
-  createdAt:         string;
 }
 
 /* ── tenants ────────────────────────────────────────────────*/
+/** TenantController.TenantResponse */
 export interface Tenant {
   id:          TenantId;
-  planId:      string;
-  plan?:       Plan;
   slug:        string;
-  name:        string;
-  cnpj:        string | null;
-  status:      TenantStatus;
-  settings:    Record<string, unknown>;
+  status:      string;
   trialEndsAt: string | null;
-  createdAt:   string;
-  updatedAt:   string;
 }
 
 /* ── users ──────────────────────────────────────────────────*/
+/** UserController.UserResponse */
 export interface User {
   id:            UserId;
-  tenantId:      TenantId;
   email:         string;
-  /** full_name no banco → fullName no Java */
-  fullName:      string;
-  phone:         string | null;
-  avatarUrl:     string | null;
-  isActive:      boolean;
+  /** Retornado como "active" pelo backend */
+  active:        boolean;
   emailVerified: boolean;
   lastLoginAt:   string | null;
-  createdAt:     string;
-  updatedAt:     string;
-  roles?:        Role[];
 }
 
 /* ── roles ──────────────────────────────────────────────────*/
+/** RoleController.RoleResponse */
 export interface Role {
-  id:          string;
-  tenantId:    TenantId;
+  id:          RoleId;
   name:        string;
-  description: string | null;
   permissions: string[];
-  isSystem:    boolean;
-  createdAt:   string;
+  /** Retornado como "system" pelo backend */
+  system:      boolean;
+}
+
+/* ── user_roles ─────────────────────────────────────────────*/
+/** UserRoleController.UserRoleResponse */
+export interface UserRole {
+  id:        string;
+  /** ID do usuário associado */
+  userId:    string;
+  /** ID da role associada */
+  roleId:    string;
+  /** ID do usuário que concedeu a role (nullable) */
+  grantedBy: string | null;
+  grantedAt: string;
 }
 
 /* ── categories ─────────────────────────────────────────────*/
 export interface Category {
-  id:        string;
-  parentId:  string | null;
-  name:      string;
-  slug:      string;
-  createdAt: string;
+  id:       string;
+  parentId: string | null;
+  name:     string;
+  slug:     string;
   children?: Category[];
 }
 
 /* ── suppliers ──────────────────────────────────────────────*/
+/** SupplierController.SupplierResponse */
 export interface Supplier {
   id:              SupplierId;
-  tenantId:        TenantId;
-  /** company_name no banco → companyName no Java */
-  companyName:     string;
-  cnpj:            string;
-  email:           string;
+  name:            string;
+  email:           string | null;
   phone:           string | null;
-  status:          SupplierStatus;
   address:         string | null;
   city:            string | null;
   state:           string | null;
-  zipCode:         string | null;
-  lat:             number | null;
-  lng:             number | null;
+  postalCode:      string | null;
+  /** Retornado como "active" pelo backend */
+  active:          boolean;
   reputationScore: number;
-  totalRatings:    number;
-  totalDeliveries: number;
-  maxDeliveryKm:   number;
-  responseSlaMin:  number;
-  createdAt:       string;
-  updatedAt:       string;
-  categories?:     Category[];
 }
 
 /* ── order_items ────────────────────────────────────────────*/
+/** OrderController.OrderItemResponse */
 export interface OrderItem {
-  id:       string;
-  orderId?: OrderId;
-  name:     string;       // campo real do backend
-  unit:     string;
-  quantity: number;
-  notes:    string | null;
+  id:          string;
+  categoryId:  string | null;
+  description: string;
+  unit:        string | null;
+  quantity:    number;
+  notes:       string | null;
+  sortOrder:   number;
 }
 
 /* ── orders ─────────────────────────────────────────────────*/
+/** OrderController.OrderSummaryResponse */
+export interface OrderSummary {
+  id:            OrderId;
+  title:         string | null;
+  referenceCode: string | null;
+  status:        OrderStatus;
+  isUrgent:      boolean;
+  deliveryCity:  string | null;
+  deliveryState: string | null;
+  createdAt:     string;
+}
+
+/** OrderController.OrderDetailsResponse */
 export interface Order {
-  id:          OrderId;
-  title:       string;
-  description: string | null;
-  status:      OrderStatus;
-  scheduledAt: string | null;
-  createdAt:   string;
-  items?:      OrderItem[];
-}
-
-/* ── proposals ──────────────────────────────────────────────*/
-export interface Proposal {
-  id:          ProposalId;
-  orderId:     OrderId;
-  supplierId:  SupplierId;
-  supplier?:   Supplier;
-  status:      ProposalStatus;
-  totalPrice:  number;
-  deliveryMin: number;
-  notes:       string | null;
-  submittedAt: string;
-  expiresAt:   string | null;
-  updatedAt:   string;
-  items?:      ProposalItem[];
-}
-
-/* ── proposal_items ─────────────────────────────────────────*/
-export interface ProposalItem {
-  id:          string;
-  proposalId:  ProposalId;
-  orderItemId: string;
-  orderItem?:  OrderItem;
-  unitPrice:   number;
-  quantity:    number;
-  available:   boolean;
-  notes:       string | null;
-}
-
-/* ── order_selections ───────────────────────────────────────*/
-export interface OrderSelection {
-  id:         string;
-  orderId:    OrderId;
-  proposalId: ProposalId;
-  proposal?:  Proposal;
-  selectedBy: UserId;
-  selectedAt: string;
-  reason:     string | null;
-}
-
-/* ── deliveries ─────────────────────────────────────────────*/
-export interface Delivery {
-  id:                DeliveryId;
-  /** Ligada a order_selection, não diretamente ao order/supplier */
-  orderSelectionId:  string;
-  orderSelection?:   OrderSelection;
-  status:            DeliveryStatus;
-  trackingCode:      string | null;
-  scheduledAt:       string | null;
-  dispatchedAt:      string | null;
-  deliveredAt:       string | null;
-  deliveryNotes:     string | null;
-  proofUrl:          string | null;
-  createdAt:         string;
-  updatedAt:         string;
-}
-
-/* ── ratings ────────────────────────────────────────────────*/
-export interface Rating {
-  id:               string;
-  orderSelectionId: string;
-  ratedBy:          UserId;
-  supplierId:       SupplierId;
-  supplier?:        Supplier;
-  score:            1 | 2 | 3 | 4 | 5;
-  comment:          string | null;
-  response:         string | null;
-  createdAt:        string;
-}
-
-/* ── webhooks ───────────────────────────────────────────────*/
-export interface Webhook {
-  id:        string;
-  tenantId:  TenantId;
-  url:       string;
-  events:    string[];
-  secret:    string;
-  isActive:  boolean;
-  createdAt: string;
-}
-
-/* ── audit_logs ─────────────────────────────────────────────*/
-export interface AuditLog {
-  id:        string;
-  tenantId:  TenantId;
-  userId:    UserId | null;
-  action:    string;
-  entity:    string;
-  entityId:  string | null;
-  payload:   Record<string, unknown>;
-  ipAddress: string | null;
-  userAgent: string | null;
-  createdAt: string;
+  id:                  OrderId;
+  title:               string | null;
+  referenceCode:       string | null;
+  notes:               string | null;
+  status:              OrderStatus;
+  isUrgent:            boolean;
+  deliveryAddress:     string;
+  deliveryCity:        string | null;
+  deliveryState:       string | null;
+  deliveryLat:         number | null;
+  deliveryLng:         number | null;
+  deliveryWindowStart: string | null;
+  deliveryWindowEnd:   string | null;
+  maxSuppliers:        number;
+  auctionDurationMin:  number;
+  createdAt:           string;
+  items:               OrderItem[];
 }
 
 /* ── order_distributions ────────────────────────────────────*/
+/** OrderController.OrderDistributionResponse */
 export interface OrderDistribution {
   id:               string;
   orderId:          OrderId;
   supplierId:       SupplierId;
-  supplier?:        Supplier;
-  notifiedAt:       string;
-  channel:          string;
-  openedAt:         string | null;
+  status:           OrderDistributionStatus;
+  distributedAt:    string;
   queueMessageId:   string | null;
   queuedAt:         string | null;
   processingAt:     string | null;
   sentAt:           string | null;
   failedAt:         string | null;
-  dispatchAttempts: number;
+  dispatchAttempts: number | null;
   failureReason:    string | null;
 }
 
+/* ── proposals ──────────────────────────────────────────────*/
+/** OrderController.ProposalResponse / ProposalController.ProposalResponse */
+export interface Proposal {
+  id:                 ProposalId;
+  distributionId:     string;
+  status:             ProposalStatus;
+  totalPrice:         number;
+  deliveryEtaHours:   number | null;
+  proposedDeliveryAt: string | null;
+  message:            string | null;
+}
+
+/* ── proposal_items ─────────────────────────────────────────*/
+/** OrderController.ProposalItemResponse */
+export interface ProposalItem {
+  id:           string;
+  orderItemId:  string;
+  unitPrice:    number;
+  totalPrice:   number;
+  availability: ProposalItemAvailability;
+}
+
+/* ── order_selections ───────────────────────────────────────*/
+/** OrderController.OrderSelectionResponse */
+export interface OrderSelection {
+  id:         string;
+  orderId:    OrderId;
+  proposalId: ProposalId;
+  selectedBy: UserId;
+  status:     OrderSelectionStatus;
+  selectedAt: string;
+}
+
+/* ── deliveries ─────────────────────────────────────────────*/
+/** OrderController.DeliveryResponse / DeliveryController.DeliveryResponse */
+export interface Delivery {
+  id:           DeliveryId;
+  /** Presente em OrderController.DeliveryResponse */
+  selectionId?: string;
+  status:       DeliveryStatus;
+  trackingCode: string | null;
+  scheduledAt:  string | null;
+  dispatchedAt: string | null;
+  deliveredAt:  string | null;
+  proofUrl:     string | null;
+}
+
+/* ── ratings ────────────────────────────────────────────────*/
+/** OrderController.RatingResponse */
+export interface Rating {
+  id:          string;
+  selectionId: string;
+  supplierId:  SupplierId;
+  score:       number;
+  comment:     string | null;
+  response:    string | null;
+}
+
+/* ── webhooks ───────────────────────────────────────────────*/
+/** WebhookController.WebhookResponse */
+export interface Webhook {
+  id:     string;
+  url:    string;
+  events: string[];
+  /** Retornado como "active" pelo backend */
+  active: boolean;
+}
+
+/* ── webhook_deliveries ─────────────────────────────────────*/
+export interface WebhookDelivery {
+  id:          string;
+  webhookId:   string;
+  event:       string;
+  payload:     Record<string, unknown>;
+  statusCode:  number | null;
+  response:    string | null;
+  deliveredAt: string | null;
+  createdAt:   string;
+}
+
+/* ── audit_logs ─────────────────────────────────────────────*/
+/** AuditLogController.AuditLogResponse */
+export interface AuditLog {
+  id:        string;
+  action:    string;
+  entity:    string;
+  entityId:  string | null;
+  payload:   Record<string, unknown>;
+  createdAt: string;
+}
+
+/* ── API Response ───────────────────────────────────────────*/
+/** Envelope padrão do backend: ApiResponse<T> */
+export interface ApiResponse<T> {
+  data:  T;
+  meta:  { total: number } | null;
+  links: Record<string, unknown>;
+}
+
 /* ── Paginação ──────────────────────────────────────────────*/
+/** Usado pelos services do frontend */
 export interface PaginatedResponse<T> {
   data:       T[];
   total:      number;
@@ -296,4 +338,23 @@ export interface SupplierFilters extends PaginationParams {
   categoryId?: string;
   search?:     string;
   city?:       string;
+}
+
+/* ── Extended types (para uso no frontend) ──────────────────*/
+
+/** Proposal com dados expandidos do supplier (usado em dashboards) */
+export interface ProposalWithSupplier extends Proposal {
+  supplier?: Supplier;
+  orderId?:  OrderId;
+  submittedAt?: string;
+}
+
+/** OrderItem com dados expandidos (usado em comparações) */
+export interface OrderItemWithDetails extends OrderItem {
+  category?: Category;
+}
+
+/** ProposalItem com dados expandidos (usado em detalhes) */
+export interface ProposalItemWithDetails extends ProposalItem {
+  orderItem?: OrderItem;
 }

@@ -19,7 +19,6 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
   { value: 'all',      label: 'Todos' },
   { value: 'active',   label: 'Ativo' },
   { value: 'inactive', label: 'Inativo' },
-  { value: 'blocked',  label: 'Bloqueado' },
 ];
 
 @Component({
@@ -80,16 +79,11 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
           <tbody>
             @for (supplier of filteredSuppliers(); track supplier.id) {
               <tr class="table-row">
-                <td><span class="supplier-name">{{ supplier.companyName }}</span></td>
+                <td><span class="supplier-name">{{ supplier.name }}</span></td>
                 <td class="city-cell">📍 {{ supplier.city }}, {{ supplier.state }}</td>
                 <td>
                   <div class="category-chips">
-                    @for (cat of supplier.categories?.slice(0, 2); track cat.id) {
-                      <span class="category-chip">{{ cat.name }}</span>
-                    }
-                    @if ((supplier.categories?.length ?? 0) > 2) {
-                      <span class="category-chip category-chip--more">+{{ (supplier.categories?.length ?? 0) - 2 }}</span>
-                    }
+                    <span class="category-chip category-chip--empty">—</span>
                   </div>
                 </td>
                 <td>
@@ -97,8 +91,8 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
                     ★ {{ supplier.reputationScore.toFixed(1) }}
                   </span>
                 </td>
-                <td class="sla-cell">{{ supplier.responseSlaMin }} min</td>
-                <td><edq-status-badge [status]="supplier.status" /></td>
+                <td class="sla-cell">—</td>
+                <td><edq-status-badge [status]="supplier.active ? 'active' : 'inactive'" /></td>
                 <td>
                   <div class="row-actions">
                     <edq-button variant="ghost" size="sm" [routerLink]="[supplier.id]">Ver</edq-button>
@@ -149,11 +143,14 @@ export class SuppliersListComponent implements OnInit {
   protected readonly filteredSuppliers = computed(() => {
     let list = this.suppliers();
     const status = this.activeStatus();
-    if (status !== 'all') list = list.filter(s => s.status === status);
+    if (status !== 'all') {
+      const isActive = status === 'active';
+      list = list.filter(s => s.active === isActive);
+    }
     const q = this.searchQuery().toLowerCase();
     if (q) {
       list = list.filter(s =>
-        s.companyName?.toLowerCase().includes(q) ||
+        s.name?.toLowerCase().includes(q) ||
         s.city?.toLowerCase().includes(q),
       );
     }

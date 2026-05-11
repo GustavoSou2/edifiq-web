@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from '../api.service';
-import { Order, OrderItem, OrderFilters, PaginatedResponse } from '../../../shared/types/domain.types';
+import { Order, OrderSummary, OrderFilters, PaginatedResponse } from '../../../shared/types/domain.types';
 
 /* ── Request payloads ───────────────────────────────────────*/
 
@@ -32,6 +32,18 @@ export interface CreateOrderPayload {
   }[];
 }
 
+/** Corresponde a OrderFlowService.UpdateOrderRequest no backend.
+ *  Todos os campos são opcionais — apenas os informados são atualizados. */
+export interface UpdateOrderPayload {
+  deliveryAddress?: string | null;
+  deliveryCity?:    string | null;
+  deliveryState?:   string | null;
+  deliveryLat?:     number | null;
+  deliveryLng?:     number | null;
+  title?:           string | null;
+  notes?:           string | null;
+}
+
 export interface SelectProposalPayload {
   proposalId: string;
 }
@@ -44,58 +56,63 @@ export interface CreateRatingPayload {
 @Injectable({ providedIn: 'root' })
 export class OrdersApiService extends ApiService {
 
-  /** Lista pedidos do tenant */
-  list(filters?: OrderFilters): Observable<PaginatedResponse<Order>> {
-    return this.get<PaginatedResponse<Order>>('/orders', filters as Record<string, unknown>);
+  /** Lista pedidos do tenant — retorna OrderSummary (sem items) */
+  list(filters?: OrderFilters): Observable<PaginatedResponse<OrderSummary>> {
+    return this.get<PaginatedResponse<OrderSummary>>('/v1/orders', filters as Record<string, unknown>);
   }
 
   /** Busca um pedido pelo ID */
   findById(id: string): Observable<Order> {
-    return this.get<Order>(`/orders/${id}`);
+    return this.get<Order>(`/v1/orders/${id}`);
   }
 
   /** Cria um novo pedido */
   create(payload: CreateOrderPayload): Observable<Order> {
-    return this.post<Order>('/orders', payload);
+    return this.post<Order>('/v1/orders', payload);
   }
 
   /** Publica o pedido (distribui para fornecedores) */
   publish(id: string): Observable<unknown> {
-    return this.post<unknown>(`/orders/${id}/publish`, {});
+    return this.post<unknown>(`/v1/orders/${id}/publish`, {});
   }
 
   /** Lista distribuições de um pedido */
   listDistributions(id: string): Observable<unknown[]> {
-    return this.get<unknown[]>(`/orders/${id}/distributions`);
+    return this.get<unknown[]>(`/v1/orders/${id}/distributions`);
   }
 
   /** Lista propostas de um pedido */
   listProposals(id: string): Observable<unknown[]> {
-    return this.get<unknown[]>(`/orders/${id}/proposals`);
+    return this.get<unknown[]>(`/v1/orders/${id}/proposals`);
   }
 
   /** Seleciona uma proposta */
   selectProposal(orderId: string, payload: SelectProposalPayload): Observable<unknown> {
-    return this.post<unknown>(`/orders/${orderId}/select`, payload);
+    return this.post<unknown>(`/v1/orders/${orderId}/select`, payload);
   }
 
   /** Busca a seleção de um pedido */
   getSelection(orderId: string): Observable<unknown> {
-    return this.get<unknown>(`/orders/${orderId}/selection`);
+    return this.get<unknown>(`/v1/orders/${orderId}/selection`);
   }
 
   /** Busca a entrega de um pedido */
   getDelivery(orderId: string): Observable<unknown> {
-    return this.get<unknown>(`/orders/${orderId}/delivery`);
+    return this.get<unknown>(`/v1/orders/${orderId}/delivery`);
   }
 
   /** Avalia o fornecedor após entrega */
   rate(orderId: string, payload: CreateRatingPayload): Observable<unknown> {
-    return this.post<unknown>(`/orders/${orderId}/rate`, payload);
+    return this.post<unknown>(`/v1/orders/${orderId}/rate`, payload);
+  }
+
+  /** Atualiza campos de um pedido — PUT /v1/orders/:id */
+  update(id: string, payload: UpdateOrderPayload): Observable<Order> {
+    return this.put<Order>(`/v1/orders/${id}`, payload);
   }
 
   /** Lista itens de proposta */
   listProposalItems(orderId: string, proposalId: string): Observable<unknown[]> {
-    return this.get<unknown[]>(`/orders/${orderId}/proposals/${proposalId}/items`);
+    return this.get<unknown[]>(`/v1/orders/${orderId}/proposals/${proposalId}/items`);
   }
 }

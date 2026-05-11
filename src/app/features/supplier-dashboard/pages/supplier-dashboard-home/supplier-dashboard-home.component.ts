@@ -83,10 +83,10 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
             <tbody>
               @for (p of proposals().slice(0, 5); track p.id) {
                 <tr class="table-row">
-                  <td><span class="mono">{{ p.orderId }}</span></td>
+                  <td><span class="mono">{{ p.distributionId }}</span></td>
                   <td><span class="price">{{ p.totalPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span></td>
                   <td><edq-status-badge [status]="p.status" /></td>
-                  <td class="date-cell">{{ p.submittedAt | date:'dd/MM/yyyy' }}</td>
+                  <td class="date-cell">—</td>
                   <td>
                     <edq-button variant="ghost" size="sm" [routerLink]="['/app/my-proposals', p.id]">Ver</edq-button>
                   </td>
@@ -115,8 +115,8 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
             <div class="delivery-card">
               <div class="delivery-card__icon" aria-hidden="true">🚛</div>
               <div class="delivery-card__body">
-                <div class="delivery-card__ref">{{ d.orderSelectionId }}</div>
-                <div class="delivery-card__supplier">{{ d.orderSelection?.proposal?.supplier?.companyName ?? '—' }}</div>
+                <div class="delivery-card__ref">{{ d.selectionId ?? d.id }}</div>
+                <div class="delivery-card__supplier">—</div>
               </div>
               <div class="delivery-card__date">
                 <span class="delivery-card__date-label">Agendado</span>
@@ -176,7 +176,7 @@ export class SupplierDashboardHomeComponent implements OnInit {
     this.proposalsApi.listByOrder('me').subscribe({
       next: res => {
         this.proposals.set(res.data);
-        const accepted = res.data.filter(p => p.status === 'accepted').length;
+        const accepted = res.data.filter(p => p.status === 'submitted').length;
         this.acceptedCount.set(accepted);
         const rate = res.data.length ? Math.round((accepted / res.data.length) * 100) : 0;
         this.conversionRate.set(`${rate}% de conversão`);

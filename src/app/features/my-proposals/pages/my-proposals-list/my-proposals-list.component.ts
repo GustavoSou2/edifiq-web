@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CurrencyPipe, DatePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 
 import { PageHeaderComponent }  from '../../../../shared/components/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
@@ -19,9 +19,7 @@ import { ProposalsApiService }  from '../../../../core/services/api/proposals-ap
 const STATUS_FILTERS: { value: ProposalStatus | 'all'; label: string }[] = [
   { value: 'all',       label: 'Todas' },
   { value: 'submitted', label: 'Enviadas' },
-  { value: 'accepted',  label: 'Aceitas' },
-  { value: 'rejected',  label: 'Recusadas' },
-  { value: 'expired',   label: 'Expiradas' },
+  { value: 'updated',   label: 'Atualizadas' },
   { value: 'withdrawn', label: 'Retiradas' },
 ];
 
@@ -29,7 +27,7 @@ const STATUS_FILTERS: { value: ProposalStatus | 'all'; label: string }[] = [
   selector: 'edq-my-proposals-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, CurrencyPipe, DatePipe, PageHeaderComponent, StatusBadgeComponent, ButtonComponent, StatCardComponent],
+  imports: [RouterLink, CurrencyPipe, PageHeaderComponent, StatusBadgeComponent, ButtonComponent, StatCardComponent],
   template: `
     <edq-page-header
       title="Minhas Propostas"
@@ -78,14 +76,14 @@ const STATUS_FILTERS: { value: ProposalStatus | 'all'; label: string }[] = [
           <tbody>
             @for (p of filteredProposals(); track p.id) {
               <tr class="table-row">
-                <td><span class="mono">{{ p.orderId }}</span></td>
+                <td><span class="mono">{{ p.distributionId }}</span></td>
                 <td>
-                  <span class="price" [class.price--accepted]="p.status === 'accepted'">
+                  <span class="price">
                     {{ p.totalPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}
                   </span>
                 </td>
                 <td><edq-status-badge [status]="p.status" /></td>
-                <td class="date-cell">{{ p.submittedAt | date:'dd/MM/yyyy' }}</td>
+                <td class="date-cell">—</td>
                 <td>
                   <div class="row-actions">
                     <edq-button variant="ghost" size="sm" [routerLink]="[p.id]">Ver</edq-button>
@@ -126,8 +124,8 @@ export class MyProposalsListComponent implements OnInit {
   protected readonly error     = signal<string | null>(null);
 
   protected readonly totalCount    = computed(() => this.proposals().length);
-  protected readonly acceptedCount = computed(() => this.proposals().filter(p => p.status === 'accepted').length);
-  protected readonly rejectedCount = computed(() => this.proposals().filter(p => p.status === 'rejected').length);
+  protected readonly acceptedCount = computed(() => this.proposals().filter(p => p.status === 'submitted').length);
+  protected readonly rejectedCount = computed(() => this.proposals().filter(p => p.status === 'withdrawn').length);
   protected readonly pendingCount  = computed(() => this.proposals().filter(p => p.status === 'submitted').length);
   protected readonly acceptedRate  = computed(() => {
     const total = this.totalCount();

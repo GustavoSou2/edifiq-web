@@ -67,8 +67,8 @@ const STATUS_FILTERS: { value: DeliveryStatus | 'all'; label: string }[] = [
           <tbody>
             @for (delivery of filteredDeliveries(); track delivery.id) {
               <tr class="table-row">
-                <td><span class="mono">{{ delivery.orderSelectionId }}</span></td>
-                <td>{{ delivery.orderSelection?.proposal?.supplier?.companyName ?? '—' }}</td>
+                <td><span class="mono">{{ delivery.selectionId ?? delivery.id }}</span></td>
+                <td>—</td>
                 <td><edq-status-badge [status]="delivery.status" /></td>
                 <td class="date-cell">{{ delivery.scheduledAt | date:'dd/MM/yyyy HH:mm' }}</td>
                 <td class="date-cell">{{ delivery.deliveredAt ? (delivery.deliveredAt | date:'dd/MM/yyyy HH:mm') : '—' }}</td>

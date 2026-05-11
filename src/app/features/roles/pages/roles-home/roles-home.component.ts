@@ -52,17 +52,14 @@ const PERMISSION_GROUPS = [...new Set(ALL_PERMISSIONS.map(p => p.group))];
     } @else {
       <div class="roles-grid">
         @for (role of roles(); track role.id) {
-          <div class="role-card" [class.role-card--system]="role.isSystem">
+          <div class="role-card" [class.role-card--system]="role.system">
             <div class="role-card__header">
               <div class="role-card__title-row">
                 <h3 class="role-card__name">{{ role.name }}</h3>
-                @if (role.isSystem) {
+                @if (role.system) {
                   <span class="system-badge">Sistema</span>
                 }
               </div>
-              @if (role.description) {
-                <p class="role-card__desc">{{ role.description }}</p>
-              }
             </div>
 
             <div class="role-card__permissions">
@@ -81,7 +78,7 @@ const PERMISSION_GROUPS = [...new Set(ALL_PERMISSIONS.map(p => p.group))];
             </div>
 
             <div class="role-card__footer">
-              @if (!role.isSystem) {
+              @if (!role.system) {
                 <edq-button variant="ghost" size="sm" (clicked)="openEdit(role)">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   Editar
@@ -248,7 +245,7 @@ export class RolesHomeComponent implements OnInit {
 
   openEdit(role: Role): void {
     this.editingId.set(role.id);
-    this.form = { name: role.name, description: role.description ?? '', permissions: [...role.permissions] };
+    this.form = { name: role.name, description: '', permissions: [...role.permissions] };
     this.formSubmitted.set(false);
     this.formError.set('');
     this.modalOpen.set(true);

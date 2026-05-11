@@ -14,7 +14,7 @@ import { PageHeaderComponent }  from '../../../../shared/components/page-header/
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
 import { InputComponent }       from '../../../../shared/components/input/input.component';
-import { Order, OrderStatus }   from '../../../../shared/types/domain.types';
+import { Order, OrderSummary, OrderStatus }   from '../../../../shared/types/domain.types';
 import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
 import { DatePipe }             from '@angular/common';
 
@@ -96,7 +96,7 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
                   </div>
                 </td>
                 <td><edq-status-badge [status]="order.status" /></td>
-                <td class="city-cell">{{ order.items?.length ?? 0 }} item(s)</td>
+                <td class="city-cell">{{ order.deliveryCity ?? '—' }}</td>
                 <td>
                   <span class="proposal-count">—</span>
                 </td>
@@ -133,7 +133,7 @@ export class OrdersListComponent implements OnInit {
   protected searchQuery            = '';
   protected urgentOnly             = false;
 
-  protected readonly orders    = signal<Order[]>([]);
+  protected readonly orders    = signal<OrderSummary[]>([]);
   protected readonly isLoading = signal(false);
   protected readonly error     = signal<string | null>(null);
 

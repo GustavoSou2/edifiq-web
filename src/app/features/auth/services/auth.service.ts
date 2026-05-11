@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { PermissionService } from '../../../core/services/permission.service';
 
 export interface AuthUser {
   id:            string;
@@ -49,8 +50,9 @@ const TOKEN_KEY = 'edq_token';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly http = inject(HttpClient);
-  private readonly base = `${environment.apiUrl}/v1`;
+  private readonly http        = inject(HttpClient);
+  private readonly base        = `${environment.apiUrl}/v1`;
+  private readonly permService = inject(PermissionService);
 
   /* ── State ──────────────────────────────────────────────── */
   private readonly _user         = signal<AuthUser | null>(null);
@@ -86,6 +88,8 @@ export class AuthService {
         this.http.get<MeResponse>(`${this.base}/me`),
       );
       this._user.set(res.user);
+      // Carrega permissões do usuário restaurado
+      // await this.permService.load(res.user.id);
     } catch {
       // Token expirado ou inválido — limpa tudo silenciosamente
       this._clearSession();
@@ -105,6 +109,8 @@ export class AuthService {
       );
 
       this._setSession(res.user, res.accessToken);
+      // Carrega permissões após login
+      // await this.permService.load(res.user.id);
       return true;
 
     } catch (err) {
@@ -129,6 +135,8 @@ export class AuthService {
 
       this._setSession(res.user, res.accessToken);
       this._pendingEmail.set(payload.email);
+      // Carrega permissões após registro
+      // await this.permService.load(res.user.id);
       return true;
 
     } catch (err: any) {
@@ -169,6 +177,7 @@ export class AuthService {
   /* ── Logout ─────────────────────────────────────────────── */
   logout(): void {
     this._clearSession();
+    this.permService.clear();
     this._pendingEmail.set(null);
     this._error.set(null);
   }

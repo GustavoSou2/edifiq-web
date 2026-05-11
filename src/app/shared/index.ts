@@ -31,13 +31,16 @@ export type {
 } from './types/ui.types';
 
 export type {
-  TenantId, UserId, OrderId, SupplierId, ProposalId, DeliveryId,
-  OrderStatus, ProposalStatus, DeliveryStatus, SupplierStatus, TenantStatus,
-  Plan, Tenant, User, Role, Category,
-  Supplier, OrderItem, Order,
+  TenantId, UserId, OrderId, SupplierId, ProposalId, DeliveryId, RoleId,
+  OrderStatus, ProposalStatus, ProposalItemAvailability,
+  OrderDistributionStatus, OrderSelectionStatus,
+  DeliveryStatus, SupplierStatus, TenantStatus,
+  Plan, Tenant, User, Role, UserRole, Category,
+  Supplier, OrderItem, OrderSummary, Order,
   ProposalItem, Proposal, OrderSelection,
-  Delivery, Rating, Webhook,
+  Delivery, Rating, Webhook, WebhookDelivery,
   AuditLog, OrderDistribution,
-  PaginatedResponse, PaginationParams,
+  ApiResponse, PaginatedResponse, PaginationParams,
   OrderFilters, SupplierFilters,
+  ProposalWithSupplier, OrderItemWithDetails, ProposalItemWithDetails,
 } from './types/domain.types';

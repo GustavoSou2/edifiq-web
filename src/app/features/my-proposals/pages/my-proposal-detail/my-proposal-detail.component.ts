@@ -145,13 +145,12 @@ const MOCK_PROPOSAL: ProposalDetail = {
             <edq-button variant="danger" size="md">Retirar Proposta</edq-button>
           }
 
-          @if (proposal.status === 'accepted') {
-            <p class="action-card__hint success">🎉 Sua proposta foi aceita! Prepare-se para a entrega.</p>
-            <edq-button variant="primary" size="md" routerLink="/app/deliveries">Ver Entregas</edq-button>
+          @if (proposal.status === 'updated') {
+            <p class="action-card__hint">Sua proposta foi atualizada e está em avaliação.</p>
           }
 
-          @if (proposal.status === 'rejected') {
-            <p class="action-card__hint">Sua proposta não foi selecionada desta vez.</p>
+          @if (proposal.status === 'withdrawn') {
+            <p class="action-card__hint">Você retirou esta proposta.</p>
             <edq-button variant="primary" size="md" routerLink="/app/available-orders">Ver Novos Pedidos</edq-button>
           }
         </div>
@@ -165,11 +164,8 @@ export class MyProposalDetailComponent {
 
   protected statusMessage(): string {
     const messages: Record<ProposalStatus, string> = {
-      pending:   'Proposta em rascunho',
       submitted: 'Aguardando avaliação do comprador',
-      accepted:  'Parabéns! Sua proposta foi aceita',
-      rejected:  'Proposta não selecionada',
-      expired:   'Proposta expirada',
+      updated:   'Proposta atualizada — em avaliação',
       withdrawn: 'Proposta retirada por você',
     };
     return messages[this.proposal.status] ?? '';

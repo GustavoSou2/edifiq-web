@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/guards/auth.guard';
+import { permissionGuard } from './core/guards/permission.guard';
 
 export const routes: Routes = [
   {
@@ -26,12 +27,13 @@ export const routes: Routes = [
   /* ── App (protegido) ────────────────────────────────────── */
   {
     path: 'app',
-    //canActivate: [authGuard], 
+    canActivate: [authGuard],
     loadComponent: () =>
       import('./core/layout/app-layout.component').then(m => m.AppLayoutComponent),
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 
+      /* ── Painel Comprador ───────────────────────────────── */
       {
         path: 'dashboard',
         loadChildren: () =>
@@ -40,36 +42,42 @@ export const routes: Routes = [
       },
       {
         path: 'orders',
+        //canActivate: [permissionGuard('orders.view', 'orders.create')],
         loadChildren: () =>
           import('./features/orders/orders.routes').then(m => m.ORDERS_ROUTES),
         title: 'Pedidos — Edifiq',
       },
       {
         path: 'suppliers',
+        //canActivate: [permissionGuard('suppliers.view', 'suppliers.manage')],
         loadChildren: () =>
           import('./features/suppliers/suppliers.routes').then(m => m.SUPPLIERS_ROUTES),
         title: 'Fornecedores — Edifiq',
       },
       {
         path: 'deliveries',
+        //canActivate: [permissionGuard('deliveries.view', 'deliveries.manage')],
         loadChildren: () =>
           import('./features/deliveries/deliveries.routes').then(m => m.DELIVERIES_ROUTES),
         title: 'Entregas — Edifiq',
       },
       {
         path: 'users',
+        //canActivate: [permissionGuard('users.manage')],
         loadChildren: () =>
           import('./features/users/users.routes').then(m => m.USERS_ROUTES),
         title: 'Usuários — Edifiq',
       },
       {
         path: 'analytics',
+        //canActivate: [permissionGuard('analytics.view')],
         loadChildren: () =>
           import('./features/analytics/analytics.routes').then(m => m.ANALYTICS_ROUTES),
         title: 'Analytics — Edifiq',
       },
       {
         path: 'settings',
+        //canActivate: [permissionGuard('settings.manage')],
         loadChildren: () =>
           import('./features/settings/settings.routes').then(m => m.SETTINGS_ROUTES),
         title: 'Configurações — Edifiq',
@@ -106,14 +114,18 @@ export const routes: Routes = [
           ),
         title: 'Minhas Propostas — Edifiq',
       },
+
+      /* ── Administração ──────────────────────────────────── */
       {
         path: 'categories',
+        //canActivate: [permissionGuard('settings.manage')],
         loadChildren: () =>
           import('./features/categories/categories.routes').then(m => m.CATEGORIES_ROUTES),
         title: 'Categorias — Edifiq',
       },
       {
         path: 'roles',
+       // canActivate: [permissionGuard('users.manage')],
         loadChildren: () =>
           import('./features/roles/roles.routes').then(m => m.ROLES_ROUTES),
         title: 'Perfis de Acesso — Edifiq',

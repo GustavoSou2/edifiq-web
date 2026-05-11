@@ -13,9 +13,9 @@ import { PageHeaderComponent }  from '../../../../shared/components/page-header/
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
 import { MapComponent, MapMarker } from '../../../../shared/components/map/map.component';
-import { Order, OrderStatus, Proposal } from '../../../../shared/types/domain.types';
+import { OrderSummary, OrderStatus, Proposal } from '../../../../shared/types/domain.types';
 import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
-import { ProposalsApiService }  from '../../../../core/services/api/proposals-api.service';
+import { toSlug } from 'src/app/core/functions/to-slug';
 
 const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
   draft:      '#9CA3AF',
@@ -25,16 +25,6 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
   confirmed:  '#059669',
   cancelled:  '#DC2626',
   expired:    '#9CA3AF',
-};
-
-const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
-  draft:      'blue',
-  open:       'blue',
-  in_auction: 'red',
-  selected:   'yellow',
-  confirmed:  'green',
-  cancelled:  'red',
-  expired:    'blue',
 };
 
 @Component({
@@ -111,7 +101,7 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
             <article class="ig-card">
 
               <!-- ── Banner ───────────────────────────────────── -->
-              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" [attr.aria-label]="'Ver pedido ' + order.title">
+              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" [attr.aria-label]="'Ver pedido ' + (order.title ?? order.id)">
                 <div class="ig-card__banner-placeholder">
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                 </div>
@@ -124,23 +114,29 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
               <div class="ig-card__body">
                 <div class="ig-card__author">
                   <div class="author-avatar" [style.background]="statusColor(order.status)">
-                    {{ order.title.slice(0, 2).toUpperCase() }}
+                    {{ (order.title ?? order.id).slice(0, 2).toUpperCase() }}
                   </div>
                   <div class="author-info">
-                    <span class="author-name">{{ order.title }}</span>
+                    <span class="author-name">{{ order.title ?? order.id }}</span>
                     <span class="author-time">{{ order.createdAt | date:'dd/MM/yyyy · HH:mm' }}</span>
                   </div>
                 </div>
 
                 <div class="ig-card__items">
-                  @for (item of (order.items ?? []).slice(0, 3); track item.id) {
+                  @if (order.deliveryCity) {
                     <span class="item-chip">
-                      <span class="item-chip__qty">{{ item.quantity }} {{ item.unit }}</span>
-                      {{ item.name }}
+                      <span class="item-chip__qty">📍</span>
+                      {{ order.deliveryCity }}, {{ order.deliveryState }}
                     </span>
                   }
-                  @if ((order.items?.length ?? 0) > 3) {
-                    <span class="item-chip item-chip--more">+{{ (order.items?.length ?? 0) - 3 }} itens</span>
+                  @if (order.referenceCode) {
+                    <span class="item-chip">
+                      <span class="item-chip__qty">#</span>
+                      {{ order.referenceCode }}
+                    </span>
+                  }
+                  @if (order.isUrgent) {
+                    <span class="item-chip item-chip--urgent">🔥 Urgente</span>
                   }
                 </div>
 
@@ -192,13 +188,11 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
           <div class="proposals-list">
             @for (p of recentProposals(); track p.id) {
               <div class="proposal-row">
-                <div class="proposal-row__avatar">
-                  {{ p.supplier?.companyName?.slice(0, 2)?.toUpperCase() ?? '??' }}
-                </div>
+                <div class="proposal-row__avatar">??</div>
                 <div class="proposal-row__info">
-                  <span class="proposal-row__name">{{ p.supplier?.companyName ?? 'Fornecedor' }}</span>
+                  <span class="proposal-row__name">Fornecedor</span>
                   <span class="proposal-row__meta">
-                    Pedido #{{ p.orderId.slice(-4) }} · {{ p.submittedAt | date:'dd/MM HH:mm' }}
+                    Dist. #{{ p.distributionId.slice(-4) }}
                   </span>
                 </div>
                 <div class="proposal-row__right">
@@ -220,12 +214,11 @@ const MAP_MARKER_COLOR: Record<OrderStatus, MapMarker['color']> = {
 export class DashboardHomeComponent implements OnInit {
   protected readonly activeFilter = signal<OrderStatus | 'all'>('all');
 
-  private readonly ordersApi     = inject(OrdersApiService);
-  private readonly proposalsApi  = inject(ProposalsApiService);
+  private readonly ordersApi = inject(OrdersApiService);
 
-  protected readonly orders           = signal<Order[] >([]);
-  protected readonly recentProposals  = signal<Proposal[]>([]);
-  protected readonly isLoading        = signal(false);
+  protected readonly orders          = signal<OrderSummary[]>([]);
+  protected readonly recentProposals = signal<Proposal[]>([]);
+  protected readonly isLoading       = signal(false);
 
   protected readonly feedFilters = [
     { value: 'all'        as const, label: 'Todos',       dot: 'gray'   },
@@ -237,7 +230,7 @@ export class DashboardHomeComponent implements OnInit {
   ngOnInit(): void {
     this.isLoading.set(true);
     this.ordersApi.list({ perPage: 20 }).subscribe({
-      next:  res => { this.orders.set(res.data); this.isLoading.set(false); },
+      next:  (res: any) => { this.orders.set(res); this.isLoading.set(false); },
       error: ()  => this.isLoading.set(false),
     });
   }
@@ -253,4 +246,6 @@ export class DashboardHomeComponent implements OnInit {
   protected statusColor(status: OrderStatus): string {
     return STATUS_COLOR_MAP[status];
   }
+
+  toSlugOrderTitle = (title: string): string => toSlug(title);
 }

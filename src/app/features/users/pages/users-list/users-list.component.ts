@@ -8,13 +8,13 @@ import {
 import { RouterLink } from '@angular/router';
 import { DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, forkJoin } from 'rxjs';
 
 import { PageHeaderComponent } from '../../../../shared/components/page-header/page-header.component';
 import { ButtonComponent }     from '../../../../shared/components/button/button.component';
 import { InputComponent }      from '../../../../shared/components/input/input.component';
 import { ToastService }        from '../../../../shared/services/toast.service';
-import { User, Role }          from '../../../../shared/types/domain.types';
+import { User, Role, UserRole } from '../../../../shared/types/domain.types';
 import { UsersApiService }     from '../../../../core/services/api/users-api.service';
 
 @Component({
@@ -50,19 +50,19 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
               <tr class="table-row">
                 <td>
                   <div class="user-cell">
-                    <div class="user-avatar" [attr.aria-label]="user.fullName">
-                      {{ initials(user.fullName) }}
+                    <div class="user-avatar" [attr.aria-label]="user.email">
+                      {{ initials(user.email) }}
                     </div>
-                    <span class="user-name">{{ user.fullName }}</span>
+                    <span class="user-name">{{ user.email }}</span>
                   </div>
                 </td>
                 <td class="email-cell">{{ user.email }}</td>
                 <td>
                   <div class="role-chips">
-                    @for (role of user.roles; track role.id) {
+                    @for (role of userRolesMap().get(user.id) ?? []; track role.id) {
                       <span class="role-chip">{{ role.name }}</span>
                     }
-                    @if (!user.roles?.length) {
+                    @if (!(userRolesMap().get(user.id)?.length)) {
                       <span class="role-chip role-chip--empty">Sem role</span>
                     }
                   </div>
@@ -70,12 +70,12 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
                 <td>
                   <button
                     class="status-toggle"
-                    [class.status-toggle--active]="user.isActive"
+                    [class.status-toggle--active]="user.active"
                     (click)="toggleActive(user)"
-                    [attr.aria-label]="user.isActive ? 'Desativar usuário' : 'Ativar usuário'"
+                    [attr.aria-label]="user.active ? 'Desativar usuário' : 'Ativar usuário'"
                   >
                     <span class="status-toggle__dot"></span>
-                    {{ user.isActive ? 'Ativo' : 'Inativo' }}
+                    {{ user.active ? 'Ativo' : 'Inativo' }}
                   </button>
                 </td>
                 <td class="date-cell">
@@ -151,10 +151,9 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
                       />
                       <div class="role-check-info">
                         <span class="role-check-name">{{ role.name }}</span>
-                        @if (role.isSystem) {
+                        @if (role.system) {
                           <span class="role-check-badge">Sistema</span>
-                        }
-                      </div>
+                        }                      </div>
                     </label>
                   }
                 </div>
@@ -189,6 +188,9 @@ export class UsersListComponent implements OnInit {
   protected readonly isLoading = signal(false);
   protected readonly error     = signal<string | null>(null);
 
+  /** Mapa userId → roles para exibição na tabela */
+  protected readonly userRolesMap = signal<Map<string, Role[]>>(new Map());
+
   /* ── Invite modal ───────────────────────────────────────── */
   protected readonly inviteOpen      = signal(false);
   protected readonly inviteSubmitted = signal(false);
@@ -205,9 +207,32 @@ export class UsersListComponent implements OnInit {
   private load(): void {
     this.isLoading.set(true);
     this.error.set(null);
-    this.usersApi.list().subscribe({
-      next:  res => { this.users.set(res.data); this.isLoading.set(false); },
-      error: ()  => { this.error.set('Erro ao carregar usuários.'); this.isLoading.set(false); },
+
+    // Carrega usuários, user-roles e roles em paralelo
+    forkJoin({
+      users:     this.usersApi.list(),
+      userRoles: this.usersApi.listUserRoles(),
+      roles:     this.usersApi.listRoles(),
+    }).subscribe({
+      next: ({ users, userRoles, roles }) => {
+        this.users.set(users.data);
+
+        // Monta mapa userId → Role[]
+        const rolesById = new Map(roles.map(r => [r.id, r]));
+        const map = new Map<string, Role[]>();
+        for (const ur of userRoles) {
+          const role = rolesById.get(ur.roleId);
+          if (!role) continue;
+          const existing = map.get(ur.userId) ?? [];
+          map.set(ur.userId, [...existing, role]);
+        }
+        this.userRolesMap.set(map);
+        this.isLoading.set(false);
+      },
+      error: () => {
+        this.error.set('Erro ao carregar usuários.');
+        this.isLoading.set(false);
+      },
     });
   }
 
@@ -216,7 +241,7 @@ export class UsersListComponent implements OnInit {
   }
 
   protected toggleActive(user: User): void {
-    this.usersApi.toggleActive(user.id, !user.isActive).subscribe({
+    this.usersApi.toggleActive(user.id, !user.active).subscribe({
       next: updated => {
         this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
       },
@@ -259,6 +284,7 @@ export class UsersListComponent implements OnInit {
 
     this.inviting.set(true);
     try {
+      // Cria o usuário
       const user = await firstValueFrom(
         this.usersApi.invite({
           name:    this.inviteForm.name,
@@ -266,11 +292,20 @@ export class UsersListComponent implements OnInit {
           roleIds: this.inviteForm.roleIds,
         })
       );
+
+      // Concede as roles selecionadas
+      await Promise.all(
+        this.inviteForm.roleIds.map(roleId =>
+          firstValueFrom(this.usersApi.grantRole({ userId: user.id, roleId }))
+        )
+      );
+
       this.users.update(list => [...list, user]);
-      this.toast.success('Convite enviado!', { message: `${this.inviteForm.email} receberá o link de acesso.` });
+      this.toast.success('Usuário criado!', { message: `${this.inviteForm.email} foi adicionado ao tenant.` });
       this.closeInvite();
+      this.load(); // Recarrega para atualizar o mapa de roles
     } catch (err: any) {
-      this.inviteError.set(err?.message ?? 'Erro ao enviar convite. Tente novamente.');
+      this.inviteError.set(err?.message ?? 'Erro ao criar usuário. Tente novamente.');
     } finally {
       this.inviting.set(false);
     }
