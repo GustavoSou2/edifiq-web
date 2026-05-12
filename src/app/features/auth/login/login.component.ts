@@ -158,7 +158,6 @@ export class LoginComponent {
     this.form.email.length > 0 && this.form.password.length > 0
   );
 
-  /* ── Submit ─────────────────────────────────────────────── */
   async handleSubmit(): Promise<void> {
     this.submitted.set(true);
     this.authService.clearError();

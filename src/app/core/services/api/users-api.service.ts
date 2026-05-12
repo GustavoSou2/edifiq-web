@@ -17,7 +17,9 @@ export interface InviteUserPayload {
 }
 
 export interface UpdateUserPayload {
-  active?: boolean;
+  active?:   boolean;
+  fullName?: string;
+  phone?:    string | null;
 }
 
 export interface CreateRolePayload {
@@ -55,6 +57,11 @@ export class UsersApiService extends ApiService {
     return this.patch<User>(`/v1/users/${id}`, { active });
   }
 
+  /** Atualiza dados de um usuário — PATCH /v1/users/:id */
+  update(id: string, payload: UpdateUserPayload): Observable<User> {
+    return this.patch<User>(`/v1/users/${id}`, payload);
+  }
+
   /* ── Roles ──────────────────────────────────────────────── */
 
   /** Lista roles do tenant — GET /v1/roles */
@@ -88,6 +95,10 @@ export class UsersApiService extends ApiService {
    */
   listUserRoles(): Observable<UserRole[]> {
     return this.get<UserRole[]>('/v1/user-roles');
+  }
+
+  listUserRolesByUserId(userId: string): Observable<UserRole[]> {
+    return this.get<UserRole[]>(`/v1/user-roles/user/${userId}`)
   }
 
   /**

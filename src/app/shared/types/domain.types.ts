@@ -91,10 +91,14 @@ export interface Tenant {
 export interface User {
   id:            UserId;
   email:         string;
+  /** full_name no banco */
+  fullName:      string;
+  phone:         string | null;
   /** Retornado como "active" pelo backend */
   active:        boolean;
   emailVerified: boolean;
   lastLoginAt:   string | null;
+  createdAt:     string;
 }
 
 /* ── roles ──────────────────────────────────────────────────*/

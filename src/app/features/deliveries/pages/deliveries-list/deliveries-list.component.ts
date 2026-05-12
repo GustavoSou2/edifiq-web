@@ -113,7 +113,7 @@ export class DeliveriesListComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
     this.deliveriesApi.list().subscribe({
-      next:  res => { this.deliveries.set(res.data); this.isLoading.set(false); },
+      next:  (res: any) => { this.deliveries.set(res); this.isLoading.set(false); },
       error: ()  => { this.error.set('Erro ao carregar entregas.'); this.isLoading.set(false); },
     });
   }

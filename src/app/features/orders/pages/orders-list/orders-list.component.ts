@@ -82,7 +82,8 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
             <tr>
               <th scope="col">Título</th>
               <th scope="col">Status</th>
-              <th scope="col">Itens</th>
+              <th scope="col">Cidade</th>
+              <th scope="col">Propostas</th>
               <th scope="col">Criado em</th>
               <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
@@ -100,7 +101,7 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
                 <td>
                   <span class="proposal-count">—</span>
                 </td>
-                <td class="date-cell">{{ order.createdAt | date:'dd/MM/yyyy' }}</td>
+                <td class="date-cell">{{ order.createdAt | date:'dd/MM/yyyy HH:MM:ss' }}</td>
                 <td>
                   <div class="row-actions">
                     <edq-button variant="ghost" size="sm" [routerLink]="[order.id]">Ver</edq-button>
@@ -145,7 +146,7 @@ export class OrdersListComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
     this.ordersApi.list().subscribe({
-      next:  res  => { this.orders.set(res.data); this.isLoading.set(false); },
+      next:  (res: any)  => { this.orders.set(res); this.isLoading.set(false); },
       error: ()   => { this.error.set('Erro ao carregar pedidos.'); this.isLoading.set(false); },
     });
   }

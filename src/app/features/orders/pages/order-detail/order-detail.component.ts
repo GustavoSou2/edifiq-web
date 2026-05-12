@@ -34,7 +34,34 @@ interface NominatimResult {
     town?:         string;
     village?:      string;
     state?:        string;
+    state_code?:   string;
   };
+}
+
+/** Converte nome completo do estado brasileiro para sigla UF (2 chars).
+ *  Nominatim retorna "São Paulo", o banco aceita apenas "SP". */
+const BR_STATE_TO_UF: Record<string, string> = {
+  'acre': 'AC', 'alagoas': 'AL', 'amapá': 'AP', 'amazonas': 'AM',
+  'bahia': 'BA', 'ceará': 'CE', 'distrito federal': 'DF',
+  'espírito santo': 'ES', 'goiás': 'GO', 'maranhão': 'MA',
+  'mato grosso': 'MT', 'mato grosso do sul': 'MS', 'minas gerais': 'MG',
+  'pará': 'PA', 'paraíba': 'PB', 'paraná': 'PR', 'pernambuco': 'PE',
+  'piauí': 'PI', 'rio de janeiro': 'RJ', 'rio grande do norte': 'RN',
+  'rio grande do sul': 'RS', 'rondônia': 'RO', 'roraima': 'RR',
+  'santa catarina': 'SC', 'são paulo': 'SP', 'sergipe': 'SE',
+  'tocantins': 'TO',
+};
+
+function toStateUF(state: string | undefined): string {
+  if (!state) return '';
+  // Já é sigla de 2 chars
+  if (state.length === 2) return state.toUpperCase();
+  // Tenta pelo mapa (normaliza acentos e caixa)
+  const key = state.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const normalized = Object.entries(BR_STATE_TO_UF).find(
+    ([k]) => k.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === key
+  );
+  return normalized?.[1] ?? state.slice(0, 2).toUpperCase();
 }
 
 const BANNER_MAP_CONFIG: MapConfig = {
@@ -74,7 +101,7 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
         <edq-map
           [lat]="order()?.deliveryLat ?? -23.5505"
           [lng]="order()?.deliveryLng ?? -46.6333"
-          [height]="400"
+          [height]="300"
           [zoom]="15"
           [config]="bannerConfig()"
           [ariaLabel]="'Localização — ' + order()?.deliveryAddress"
@@ -406,7 +433,7 @@ export class OrderDetailComponent {
   /* ── Computed ───────────────────────────────────────────── */
   protected readonly hasLocation = computed(() => {
     const o = this.order();
-    return !!(o?.deliveryCity || o?.deliveryAddress);
+    return !!(o?.deliveryCity || (o?.deliveryAddress && o?.deliveryAddress != 'A definir'));
   });
 
   protected readonly statusAction = computed(() => {
@@ -566,7 +593,7 @@ export class OrderDetailComponent {
     this.previewLng.set(lng);
     this.addressForm.deliveryAddress = street || result.display_name.split(',')[0];
     this.addressForm.deliveryCity    = addr.city ?? addr.town ?? addr.village ?? '';
-    this.addressForm.deliveryState   = addr.state ?? '';
+    this.addressForm.deliveryState   = toStateUF(addr.state_code ?? addr.state);
     this.addressQuery                = result.display_name;
     this.geocodingResults.set([]);
   }
@@ -585,7 +612,7 @@ export class OrderDetailComponent {
           if (street) this.addressForm.deliveryAddress = street;
           const city = a.city ?? a.town ?? a.village;
           if (city) this.addressForm.deliveryCity = city;
-          if (a.state) this.addressForm.deliveryState = a.state;
+          if (a.state) this.addressForm.deliveryState = toStateUF(a.state_code ?? a.state);
         }
       },
     });
@@ -603,7 +630,7 @@ export class OrderDetailComponent {
     this.ordersApiService.update(id, {
       deliveryAddress: this.addressForm.deliveryAddress,
       deliveryCity:    this.addressForm.deliveryCity,
-      deliveryState:   this.addressForm.deliveryState,
+      deliveryState:   toStateUF(this.addressForm.deliveryState) || null,
       deliveryLat:     this.previewLat(),
       deliveryLng:     this.previewLng(),
     }).subscribe({

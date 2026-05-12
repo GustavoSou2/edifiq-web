@@ -50,10 +50,15 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
               <tr class="table-row">
                 <td>
                   <div class="user-cell">
-                    <div class="user-avatar" [attr.aria-label]="user.email">
-                      {{ initials(user.email) }}
+                    <div class="user-avatar" [attr.aria-label]="user.fullName || user.email">
+                      {{ initials(user.fullName || user.email) }}
                     </div>
-                    <span class="user-name">{{ user.email }}</span>
+                    <div class="user-info">
+                      <span class="user-name">{{ user.fullName || user.email }}</span>
+                      @if (user.fullName) {
+                        <span class="user-email-sub">{{ user.email }}</span>
+                      }
+                    </div>
                   </div>
                 </td>
                 <td class="email-cell">{{ user.email }}</td>
@@ -83,7 +88,7 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
                 </td>
                 <td>
                   <div class="row-actions">
-                    <edq-button variant="ghost" size="sm">Editar</edq-button>
+                    <edq-button variant="ghost" size="sm" (clicked)="openEdit(user)">Editar</edq-button>
                   </div>
                 </td>
               </tr>
@@ -103,9 +108,113 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
       </div>
     }
 
+    <!-- ── Modal Editar Usuário ───────────────────────────── -->
+    @if (editOpen()) {
+      <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Editar usuário" (click)="closeEdit()">
+        <div class="modal" (click)="$event.stopPropagation()">
+          <div class="modal__header">
+            <div class="modal__header-info">
+              <div class="modal__avatar">{{ initials(editForm.fullName || editForm.email) }}</div>
+              <div>
+                <h3 class="modal__title">Editar Usuário</h3>
+                <p class="modal__subtitle">{{ editForm.email }}</p>
+              </div>
+            </div>
+            <button class="modal__close" type="button" aria-label="Fechar" (click)="closeEdit()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="modal__body">
+
+            <!-- Dados pessoais -->
+            <div class="modal__section">
+              <p class="modal__section-title">Dados Pessoais</p>
+
+              <edq-input
+                label="Nome completo"
+                placeholder="Ex: João da Silva"
+                [variant]="editSubmitted() && !editForm.fullName ? 'error' : 'default'"
+                [hint]="editSubmitted() && !editForm.fullName ? 'Campo obrigatório' : ''"
+                [(value)]="editForm.fullName"
+              />
+
+              <edq-input
+                label="Telefone"
+                type="tel"
+                placeholder="(11) 99999-9999"
+                [(value)]="editForm.phone"
+              />
+            </div>
+
+            <!-- Status -->
+            <div class="modal__section">
+              <p class="modal__section-title">Status da Conta</p>
+              <label class="toggle-row">
+                <div class="toggle-row__info">
+                  <span class="toggle-row__label">Conta ativa</span>
+                  <span class="toggle-row__desc">Usuário pode acessar a plataforma</span>
+                </div>
+                <button
+                  type="button"
+                  class="toggle-switch"
+                  [class.toggle-switch--on]="editForm.active"
+                  [attr.aria-checked]="editForm.active"
+                  role="switch"
+                  (click)="editForm.active = !editForm.active"
+                >
+                  <span class="toggle-switch__thumb"></span>
+                </button>
+              </label>
+            </div>
+
+            <!-- Roles -->
+            <div class="modal__section">
+              <p class="modal__section-title">Perfis de Acesso</p>
+              @if (rolesLoading()) {
+                <p class="field-hint">Carregando perfis...</p>
+              } @else {
+                <div class="roles-checklist">
+                  @for (role of availableRoles(); track role.id) {
+                    <label class="role-check-item">
+                      <input
+                        type="checkbox"
+                        [checked]="editForm.roleIds.includes(role.id)"
+                        (change)="toggleEditRole(role.id)"
+                      />
+                      <div class="role-check-info">
+                        <span class="role-check-name">{{ role.name }}</span>
+                        @if (role.system) {
+                          <span class="role-check-badge">Sistema</span>
+                        }
+                      </div>
+                    </label>
+                  }
+                </div>
+                @if (!availableRoles().length) {
+                  <p class="field-hint">Nenhum perfil disponível.</p>
+                }
+              }
+            </div>
+
+            @if (editError()) {
+              <div class="form-error" role="alert">{{ editError() }}</div>
+            }
+          </div>
+
+          <div class="modal__footer">
+            <edq-button variant="secondary" (clicked)="closeEdit()">Cancelar</edq-button>
+            <edq-button variant="primary" [loading]="saving()" (clicked)="saveEdit()">
+              Salvar Alterações
+            </edq-button>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- ── Modal Convidar Usuário ─────────────────────────── -->
     @if (inviteOpen()) {
-      <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Convidar usuário">
+      <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Convidar usuário" (click)="closeInvite()">
         <div class="modal" (click)="$event.stopPropagation()">
           <div class="modal__header">
             <h3 class="modal__title">Convidar Usuário</h3>
@@ -153,7 +262,8 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
                         <span class="role-check-name">{{ role.name }}</span>
                         @if (role.system) {
                           <span class="role-check-badge">Sistema</span>
-                        }                      </div>
+                        }
+                      </div>
                     </label>
                   }
                 </div>
@@ -184,20 +294,29 @@ export class UsersListComponent implements OnInit {
   private readonly usersApi = inject(UsersApiService);
   private readonly toast    = inject(ToastService);
 
-  protected readonly users     = signal<User[]>([]);
-  protected readonly isLoading = signal(false);
-  protected readonly error     = signal<string | null>(null);
-
-  /** Mapa userId → roles para exibição na tabela */
+  protected readonly users        = signal<User[]>([]);
+  protected readonly isLoading    = signal(false);
+  protected readonly error        = signal<string | null>(null);
   protected readonly userRolesMap = signal<Map<string, Role[]>>(new Map());
+
+  /** Todas as user-role associations do tenant (para diff no save) */
+  private allUserRoles: UserRole[] = [];
+
+  /* ── Edit modal ─────────────────────────────────────────── */
+  protected readonly editOpen      = signal(false);
+  protected readonly editSubmitted = signal(false);
+  protected readonly saving        = signal(false);
+  protected readonly editError     = signal('');
+  protected readonly availableRoles = signal<Role[]>([]);
+  protected readonly rolesLoading   = signal(false);
+  protected editingUserId           = '';
+  protected editForm = { fullName: '', email: '', phone: '', active: true, roleIds: [] as string[] };
 
   /* ── Invite modal ───────────────────────────────────────── */
   protected readonly inviteOpen      = signal(false);
   protected readonly inviteSubmitted = signal(false);
   protected readonly inviting        = signal(false);
   protected readonly inviteError     = signal('');
-  protected readonly availableRoles  = signal<Role[]>([]);
-  protected readonly rolesLoading    = signal(false);
   protected inviteForm = { name: '', email: '', roleIds: [] as string[] };
 
   ngOnInit(): void {
@@ -208,24 +327,18 @@ export class UsersListComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
 
-    // Carrega usuários, user-roles e roles em paralelo
     forkJoin({
       users:     this.usersApi.list(),
-      userRoles: this.usersApi.listUserRoles(),
       roles:     this.usersApi.listRoles(),
     }).subscribe({
-      next: ({ users, userRoles, roles }) => {
-        this.users.set(users.data);
+      next: ({ users, roles }: any) => {
+        this.users.set(users.data ?? users);
+        this.availableRoles.set(roles.data ?? roles);
 
         // Monta mapa userId → Role[]
-        const rolesById = new Map(roles.map(r => [r.id, r]));
+        const rolesById = new Map<string, Role>((roles.data ?? roles).map((r: Role) => [r.id, r]));
         const map = new Map<string, Role[]>();
-        for (const ur of userRoles) {
-          const role = rolesById.get(ur.roleId);
-          if (!role) continue;
-          const existing = map.get(ur.userId) ?? [];
-          map.set(ur.userId, [...existing, role]);
-        }
+        
         this.userRolesMap.set(map);
         this.isLoading.set(false);
       },
@@ -237,15 +350,109 @@ export class UsersListComponent implements OnInit {
   }
 
   protected initials(name: string): string {
+    if (!name) return '?';
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   }
 
   protected toggleActive(user: User): void {
-    this.usersApi.toggleActive(user.id, !user.active).subscribe({
+    this.usersApi.update(user.id, { active: !user.active }).subscribe({
       next: updated => {
         this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
+        this.toast.success(updated.active ? 'Usuário ativado' : 'Usuário desativado');
       },
+      error: () => this.toast.error('Erro ao alterar status'),
     });
+  }
+
+  /* ── Edit ───────────────────────────────────────────────── */
+  openEdit(user: User): void {
+    this.editingUserId = user.id;
+    this.editForm = {
+      fullName: user.fullName ?? '',
+      email:    user.email,
+      phone:    user.phone ?? '',
+      active:   user.active,
+      roleIds:  (this.userRolesMap().get(user.id) ?? []).map(r => r.id),
+    };
+    this.editSubmitted.set(false);
+    this.editError.set('');
+    this.loadRoles();
+    this.editOpen.set(true);
+  }
+
+  closeEdit(): void {
+    this.editOpen.set(false);
+  }
+
+  protected toggleEditRole(roleId: string): void {
+    const ids = this.editForm.roleIds;
+    this.editForm.roleIds = ids.includes(roleId)
+      ? ids.filter(id => id !== roleId)
+      : [...ids, roleId];
+  }
+
+  async saveEdit(): Promise<void> {
+    this.editSubmitted.set(true);
+    this.editError.set('');
+
+    if (!this.editForm.fullName.trim()) return;
+
+    this.saving.set(true);
+    try {
+      // 1. Atualiza dados do usuário
+      const updated = await firstValueFrom(
+        this.usersApi.update(this.editingUserId, {
+          fullName: this.editForm.fullName.trim(),
+          phone:    this.editForm.phone.trim() || null,
+          active:   this.editForm.active,
+        })
+      );
+
+      // 2. Sincroniza roles — calcula diff entre estado atual e novo
+      const currentRoleIds = new Set(
+        (this.userRolesMap().get(this.editingUserId) ?? []).map(r => r.id)
+      );
+      const newRoleIds = new Set(this.editForm.roleIds);
+
+      // Roles a conceder (estão no novo mas não no atual)
+      const toGrant = [...newRoleIds].filter(id => !currentRoleIds.has(id));
+
+      // Roles a revogar (estão no atual mas não no novo)
+      const toRevoke = this.allUserRoles.filter(
+        ur => ur.userId === this.editingUserId && !newRoleIds.has(ur.roleId)
+      );
+
+      await Promise.all([
+        ...toGrant.map(roleId =>
+          firstValueFrom(this.usersApi.grantRole({ userId: this.editingUserId, roleId }))
+        ),
+        ...toRevoke.map(ur =>
+          firstValueFrom(this.usersApi.revokeRole(ur.id))
+        ),
+      ]);
+
+      // 3. Atualiza estado local
+      this.users.update(list => list.map(u => u.id === updated.id ? updated : u));
+
+      // Reconstrói o mapa de roles para este usuário
+      const allRoles = this.availableRoles();
+      const newRoles = allRoles.filter(r => newRoleIds.has(r.id));
+      this.userRolesMap.update(map => {
+        const next = new Map(map);
+        next.set(this.editingUserId, newRoles);
+        return next;
+      });
+
+      // Atualiza allUserRoles local para próximas operações
+      this.allUserRoles = this.allUserRoles.filter(ur => ur.userId !== this.editingUserId);
+
+      this.toast.success('Usuário atualizado!');
+      this.closeEdit();
+    } catch (err: any) {
+      this.editError.set(err?.message ?? 'Erro ao salvar. Tente novamente.');
+    } finally {
+      this.saving.set(false);
+    }
   }
 
   /* ── Invite ─────────────────────────────────────────────── */
@@ -262,6 +469,7 @@ export class UsersListComponent implements OnInit {
   }
 
   private loadRoles(): void {
+    if (this.availableRoles().length) return; // já carregado
     this.rolesLoading.set(true);
     this.usersApi.listRoles().subscribe({
       next:  roles => { this.availableRoles.set(roles); this.rolesLoading.set(false); },
@@ -284,7 +492,6 @@ export class UsersListComponent implements OnInit {
 
     this.inviting.set(true);
     try {
-      // Cria o usuário
       const user = await firstValueFrom(
         this.usersApi.invite({
           name:    this.inviteForm.name,
@@ -293,17 +500,15 @@ export class UsersListComponent implements OnInit {
         })
       );
 
-      // Concede as roles selecionadas
       await Promise.all(
         this.inviteForm.roleIds.map(roleId =>
           firstValueFrom(this.usersApi.grantRole({ userId: user.id, roleId }))
         )
       );
 
-      this.users.update(list => [...list, user]);
       this.toast.success('Usuário criado!', { message: `${this.inviteForm.email} foi adicionado ao tenant.` });
       this.closeInvite();
-      this.load(); // Recarrega para atualizar o mapa de roles
+      this.load();
     } catch (err: any) {
       this.inviteError.set(err?.message ?? 'Erro ao criar usuário. Tente novamente.');
     } finally {

@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { PermissionService } from '../../../core/services/permission.service';
 
@@ -40,10 +40,13 @@ interface AuthResponse {
 }
 
 interface MeResponse {
-  user:       AuthUser;
   email:      string;
-  tenantId:   string;
   tenantSlug: string;
+  tokenType:   string;
+  accessToken: string;
+  userId:      string;
+  tenantId:    string;
+  user:        AuthUser;
 }
 
 const TOKEN_KEY = 'edq_token';
@@ -84,12 +87,16 @@ export class AuthService {
     this._token.set(stored);
 
     try {
-      const res = await firstValueFrom(
-        this.http.get<MeResponse>(`${this.base}/me`),
-      );
-      this._user.set(res.user);
+      const res = 
+        this.http.get<MeResponse>(`${this.base}/me`).subscribe({
+          next: (({ data: me }: any) => {
+            this._setSession(me.user, stored);
+            // await this.permService.load(res.user.id);
+
+          })
+        })
+
       // Carrega permissões do usuário restaurado
-      // await this.permService.load(res.user.id);
     } catch {
       // Token expirado ou inválido — limpa tudo silenciosamente
       this._clearSession();
