@@ -1,4 +1,8 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { AuthService } from 'src/app/features/auth/services/auth.service';
+import { TenantApiService } from './api';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
 
 export type PanelRole = 'buyer' | 'supplier';
 
@@ -33,18 +37,39 @@ export const PANEL_CONFIGS: Record<PanelRole, PanelConfig> = {
  */
 @Injectable({ providedIn: 'root' })
 export class RolePanelService {
+  private authService = inject(AuthService);
+  private tenantApiService = inject(TenantApiService);
+
   private readonly STORAGE_KEY = 'edq_panel_role';
 
   private readonly _role = signal<PanelRole>(this.loadFromStorage());
+  private hasSupplier   = signal<boolean>(true);
 
   readonly role          = this._role.asReadonly();
   readonly isBuyer       = computed(() => this._role() === 'buyer');
   readonly isSupplier    = computed(() => this._role() === 'supplier');
   readonly currentConfig = computed(() => PANEL_CONFIGS[this._role()]);
 
+  private tenantId = this.authService.tenantId();
+
+
+  constructor() {
+    this.tenantApiService.listSupplierByTenantId(<string>this.tenantId).pipe(
+      map(({_embedded: {suppliers}}: any) => {
+        this.hasSupplier.set(!!suppliers && suppliers.length > 0)
+      })
+    ).subscribe();
+
+  }
+
   setRole(role: PanelRole): void {
-    this._role.set(role);
-    localStorage.setItem(this.STORAGE_KEY, role);
+    if (role === 'supplier' && !this.hasSupplier()) {
+
+    } else  {
+      this._role.set(role);
+      localStorage.setItem(this.STORAGE_KEY, role);
+    }
+    
   }
 
   toggle(): void {

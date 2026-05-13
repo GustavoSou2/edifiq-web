@@ -34,6 +34,12 @@ export class TenantApiService extends ApiService {
     return this.get<Plan[]>('/plans');
   }
 
+  listSupplierByTenantId(tenantId: string): Observable<any[]> {
+    return this.getRaw<any[]>('/suppliers/search/findAllByTenant_Id', {
+      tenantId
+    })
+  }
+
   /** Faz upgrade/downgrade de plano */
   changePlan(planId: string): Observable<Tenant> {
     return this.post<Tenant>('/tenant/plan', { planId });

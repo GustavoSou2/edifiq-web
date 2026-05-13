@@ -50,11 +50,7 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
         <span class="stat-pill__value">12</span>
         <span class="stat-pill__label">Pedidos abertos</span>
       </div>
-      <div class="stat-pill">
-        <span class="stat-pill__dot dot-red"></span>
-        <span class="stat-pill__value">4</span>
-        <span class="stat-pill__label">Em leilão</span>
-      </div>
+    
       <div class="stat-pill">
         <span class="stat-pill__dot dot-green"></span>
         <span class="stat-pill__value">38</span>
@@ -75,7 +71,6 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
     <!-- ── Layout principal ─────────────────────────────────── -->
     <div class="dash-grid">
 
-      <!-- ── Feed Instagram ──────────────────────────────────── -->
       <section class="feed-panel">
 
         <!-- Header + filtros -->
@@ -101,14 +96,76 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
             <article class="ig-card">
 
               <!-- ── Banner ───────────────────────────────────── -->
-              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" [attr.aria-label]="'Ver pedido ' + (order.title ?? order.id)">
-                <div class="ig-card__banner-placeholder">
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                </div>
+                @if (!!order?.deliveryLat && !!order?.deliveryLng) {
+
+              <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" aria-label="Ver pedido {{ order.referenceCode }}">
+
+                <!-- Mapa estático como "foto" do post -->
+                <edq-map
+                  [lat]="order?.deliveryLat ?? -23.5505"
+                  [lng]="order?.deliveryLng ?? -46.6333"
+                  [height]="100"
+                  [zoom]="13"
+                  [config]="{
+                    dragging: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    touchZoom: false,
+                    keyboard: false,
+                    zoomControl: false,
+                    attribution: false,
+                    tileStyle: 'positron_lite',
+                    fitBounds: false,
+                    markerColor: statusColor(order.status),
+                    markerSize: 18,
+                    markerTail: true,
+                    borderRadius: '0'
+                  }"
+                />
+                
+
+                <!-- Overlay gradiente no topo -->
+                <div class="ig-card__banner-overlay"></div>
+
+                <!-- Badge de status flutuante (canto superior direito) -->
                 <div class="ig-card__status-float">
                   <edq-status-badge [status]="order.status" />
+                  @if (order.isUrgent) {
+                    <span class="urgent-pill">🔥 URGENTE</span>
+                  }
                 </div>
+
+                <!-- Localização flutuante (canto inferior esquerdo) -->
+                <div class="ig-card__location-float">
+                  <span class="location-pin">📍</span>
+                  <div class="location-text">
+                    <span class="location-city">{{ order.deliveryCity }}, {{ order.deliveryState }}</span>
+                  </div>
+                </div>
+
+                <!-- Timer de leilão (se in_auction) -->
+                @if (order.status === 'in_auction') {
+                  <div class="ig-card__timer">
+                    <span class="timer-icon">⏱</span>
+                    <span class="timer-label">Leilão ativo</span>
+                  </div>
+                }
+
               </a>
+              }  @else {
+                   <a class="ig-card__banner" [routerLink]="['/app/orders', order.id]" aria-label="Ver pedido {{ order.referenceCode }}">
+                  <div class="map-empty-state">
+                    <div class="map-grid"></div>
+
+                    <div class="map-pin">
+                      <div class="pin-pulse"></div>
+                      <i class="pi pi-map-marker"></i>
+                    </div>
+
+                    <span>Local não informado</span>
+                  </div>
+                  </a>
+                }
 
               <!-- ── Corpo ─────────────────────────────────────── -->
               <div class="ig-card__body">
@@ -123,12 +180,16 @@ const STATUS_COLOR_MAP: Record<OrderStatus, string> = {
                 </div>
 
                 <div class="ig-card__items">
-                  @if (order.deliveryCity) {
-                    <span class="item-chip">
+
+                   <span class="item-chip">
+                    @if (order.deliveryCity){
                       <span class="item-chip__qty">📍</span>
                       {{ order.deliveryCity }}, {{ order.deliveryState }}
-                    </span>
-                  }
+                    } @else {
+                      Sem Local Cadastrado
+                    }
+                  </span>
+              
                   @if (order.referenceCode) {
                     <span class="item-chip">
                       <span class="item-chip__qty">#</span>
@@ -222,7 +283,6 @@ export class DashboardHomeComponent implements OnInit {
 
   protected readonly feedFilters = [
     { value: 'all'        as const, label: 'Todos',       dot: 'gray'   },
-    { value: 'in_auction' as const, label: 'Em Leilão',   dot: 'red'    },
     { value: 'open'       as const, label: 'Abertos',     dot: 'blue'   },
     { value: 'confirmed'  as const, label: 'Confirmados', dot: 'green'  },
   ];

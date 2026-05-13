@@ -8,12 +8,13 @@ import {
   UserRole,
   PaginatedResponse,
   PaginationParams,
+  Invite,
 } from '../../../shared/types/domain.types';
 
 export interface InviteUserPayload {
   name:    string;
   email:   string;
-  roleIds: string[];
+  roleId: string;
 }
 
 export interface UpdateUserPayload {
@@ -42,6 +43,10 @@ export class UsersApiService extends ApiService {
     return this.get<PaginatedResponse<User>>('/v1/users', params as Record<string, unknown>);
   }
 
+  listInvites(params?: PaginationParams & { search?: string }): Observable<PaginatedResponse<Invite>> {
+    return this.get<PaginatedResponse<Invite>>('/v1/users/invites', params as Record<string, unknown>);
+  }
+
   /** Busca um usuário pelo ID — GET /v1/users/:id */
   findById(id: string): Observable<User> {
     return this.get<User>(`/v1/users/${id}`);
@@ -49,7 +54,7 @@ export class UsersApiService extends ApiService {
 
   /** Convida um novo usuário — POST /v1/users */
   invite(payload: InviteUserPayload): Observable<User> {
-    return this.post<User>('/v1/users', { email: payload.email });
+    return this.post<User>('/v1/users/invites', { email: payload.email, roleId: payload.roleId });
   }
 
   /** Ativa/desativa um usuário — PATCH /v1/users/:id */

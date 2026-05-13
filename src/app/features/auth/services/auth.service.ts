@@ -64,6 +64,7 @@ export class AuthService {
   private readonly _pendingEmail = signal<string | null>(null);
   private readonly _token        = signal<string | null>(null);
   private readonly _initialized  = signal(false);
+  private readonly _tenantId     = signal<string | null>(null);
 
   /* ── Public signals ─────────────────────────────────────── */
   readonly user         = this._user.asReadonly();
@@ -73,6 +74,7 @@ export class AuthService {
   readonly token        = this._token.asReadonly();
   readonly initialized  = this._initialized.asReadonly();
   readonly isLoggedIn   = computed(() => this._user() !== null);
+  readonly tenantId     = this._tenantId.asReadonly();
 
   /* ── Init — chamado via APP_INITIALIZER no boot ─────────── */
   async init(): Promise<void> {
@@ -142,6 +144,7 @@ export class AuthService {
 
       this._setSession(res.user, res.accessToken);
       this._pendingEmail.set(payload.email);
+      this._tenantId.set(res.tenantId);
       // Carrega permissões após registro
       // await this.permService.load(res.user.id);
       return true;

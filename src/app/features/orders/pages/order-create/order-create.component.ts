@@ -251,7 +251,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
           </div>
 
           <!-- Urgência -->
-          <div class="urgency-toggle" [class.urgency-toggle--active]="isUrgent">
+          <div class="urgency-toggle" [class.urgency-toggle--active]="isUrgent" style="margin-top: 18px;">
             <label class="toggle-label">
               <input type="checkbox" [(ngModel)]="isUrgent" />
               <div class="toggle-track"><div class="toggle-thumb"></div></div>
@@ -266,7 +266,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
           </div>
 
           <!-- Tempo de resposta -->
-          <div class="config-block">
+          <div class="config-block" style="margin-top: 18px;">
             <h3 class="config-block__title">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Tempo de Resposta
@@ -287,7 +287,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
           </div>
 
           <!-- Máximo de fornecedores -->
-          <div class="config-block">
+          <div class="config-block" style="margin-top: 18px;">
             <h3 class="config-block__title">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
               Máximo de Fornecedores
@@ -308,7 +308,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
           </div>
 
           <!-- Campos opcionais -->
-          <div class="optional-fields">
+          <div class="optional-fields" style="margin-top: 18px;">
             <edq-input
               label="Código de referência (opcional)"
               placeholder="Ex: OBRA-2025-001"
@@ -327,7 +327,7 @@ const UNIT_OPTIONS = ['un', 'kg', 'g', 't', 'm', 'm²', 'm³', 'L', 'saco', 'cx'
           </div>
 
           <!-- Resumo -->
-          <div class="summary-card">
+          <div class="summary-card" style="margin-top: 18px;">
             <div class="summary-card__title">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
               Resumo do Pedido

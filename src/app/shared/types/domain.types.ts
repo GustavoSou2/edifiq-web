@@ -7,6 +7,7 @@
 /* ── IDs ────────────────────────────────────────────────────*/
 export type TenantId   = string;
 export type UserId     = string;
+export type InviteId     = string;
 export type OrderId    = string;
 export type SupplierId = string;
 export type ProposalId = string;
@@ -101,6 +102,26 @@ export interface User {
   createdAt:     string;
 }
 
+export interface Invite {
+  id: InviteId;
+  tenantId: TenantId;
+  email: string;
+  token: string;
+  invitedBy: User;
+  role: Role;
+  status:  'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'CANCELED';
+  expiresAt: string;
+  acceptedAt: string;
+  createdAt: string;
+}
+
+export const InviteStatusDict = {
+  PENDING: 'Pendente',
+  ACCEPTED: 'Aceito',
+  EXPIRED: 'Expirado',
+  CANCELED: 'Cancelado',
+}
+
 /* ── roles ──────────────────────────────────────────────────*/
 /** RoleController.RoleResponse */
 export interface Role {
@@ -171,6 +192,8 @@ export interface OrderSummary {
   isUrgent:      boolean;
   deliveryCity:  string | null;
   deliveryState: string | null;
+  deliveryLat: number | null;
+  deliveryLng: number | null;
   createdAt:     string;
 }
 

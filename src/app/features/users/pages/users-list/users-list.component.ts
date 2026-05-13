@@ -14,7 +14,7 @@ import { PageHeaderComponent } from '../../../../shared/components/page-header/p
 import { ButtonComponent }     from '../../../../shared/components/button/button.component';
 import { InputComponent }      from '../../../../shared/components/input/input.component';
 import { ToastService }        from '../../../../shared/services/toast.service';
-import { User, Role, UserRole } from '../../../../shared/types/domain.types';
+import { User, Role, UserRole, Invite, InviteStatusDict } from '../../../../shared/types/domain.types';
 import { UsersApiService }     from '../../../../core/services/api/users-api.service';
 
 @Component({
@@ -23,17 +23,18 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, DatePipe, FormsModule, PageHeaderComponent, ButtonComponent, InputComponent],
   template: `
-    <edq-page-header title="Usuários & Permissões" subtitle="Controle de acesso da equipe">
-      <edq-button slot="actions" variant="secondary" size="sm" routerLink="roles">Gerenciar Roles</edq-button>
+    <edq-page-header title="Usuários & Convites" subtitle="Controle de acesso da equipe">
       <edq-button slot="actions" variant="primary"   size="sm" (clicked)="openInvite()">+ Convidar Usuário</edq-button>
     </edq-page-header>
 
+    <section class="users-content">
+    <h3>Usuários</h3>
     @if (isLoading()) {
       <div class="table-loading" aria-live="polite">Carregando usuários...</div>
     } @else if (error()) {
       <div class="table-error" role="alert">{{ error() }}</div>
     } @else {
-      <div class="table-wrapper">
+      <div class="table-wrapper" style="margin-top: 12px;">
         <table class="data-table" aria-label="Lista de usuários">
           <thead>
             <tr>
@@ -107,6 +108,83 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
         </table>
       </div>
     }
+    </section>
+
+    <section  class="invites" style="margin-top: 24px;">
+      <h3>Convites</h3>
+      @if (isLoading()) {
+      <div class="table-loading" aria-live="polite">Carregando usuários...</div>
+    } @else if (error()) {
+      <div class="table-error" role="alert">{{ error() }}</div>
+    } @else {
+      <div class="table-wrapper" style="margin-top: 12px;">
+        <table class="data-table" aria-label="Lista de usuários">
+          <thead>
+            <tr>
+              <th scope="col">Email</th>
+              <th scope="col">Roles</th>
+              <th scope="col">Status</th>
+              <th scope="col">Convidado por</th>
+              <th scope="col">Expira em</th>
+              <th scope="col"><span class="sr-only">Ações</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (invite of invistes(); track invite.id) {
+              <tr class="table-row">
+                <td>
+                  <div class="user-cell">
+                    <div class="user-info">
+                      <span class="user-name">{{ invite.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <div class="role-chips">
+                    @if (invite.role.name) {
+                      <span class="role-chip">{{ invite.role.name }}</span>
+                    } @else {
+                      <span class="role-chip role-chip--empty">Sem role</span>
+                    }
+                  </div>
+                </td>
+
+                <td>
+                  <button
+                    class="status-toggle"
+                  >
+                    <span class="status-toggle__dot"></span>
+                    {{ inviteStatusDict[invite.status] }}
+                  </button>
+                </td>
+                 <td class="date-cell">
+                  {{ invite.invitedBy.fullName ? invite.invitedBy.fullName : invite.invitedBy.email }}
+                </td>
+                <td class="date-cell">
+                  {{ invite.expiresAt ? (invite.expiresAt | date:'dd/MM/yyyy') : 'Nunca' }}
+                </td>
+                <td>
+                  <div class="row-actions">
+                    <edq-button variant="ghost" size="sm" >Cancelar</edq-button>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6">
+                  <div class="table-empty">
+                    <span>👥</span>
+                    <p>Nenhum usuário encontrado.</p>
+                    <edq-button variant="primary" size="sm" (clicked)="openInvite()">Convidar primeiro usuário</edq-button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+    </section>
 
     <!-- ── Modal Editar Usuário ───────────────────────────── -->
     @if (editOpen()) {
@@ -254,7 +332,7 @@ import { UsersApiService }     from '../../../../core/services/api/users-api.ser
                   @for (role of availableRoles(); track role.id) {
                     <label class="role-check-item">
                       <input
-                        type="checkbox"
+                        type="radio"
                         [checked]="inviteForm.roleIds.includes(role.id)"
                         (change)="toggleRole(role.id)"
                       />
@@ -295,9 +373,12 @@ export class UsersListComponent implements OnInit {
   private readonly toast    = inject(ToastService);
 
   protected readonly users        = signal<User[]>([]);
+  protected readonly invistes        = signal<Invite[]>([]);
   protected readonly isLoading    = signal(false);
   protected readonly error        = signal<string | null>(null);
   protected readonly userRolesMap = signal<Map<string, Role[]>>(new Map());
+
+  readonly inviteStatusDict = InviteStatusDict
 
   /** Todas as user-role associations do tenant (para diff no save) */
   private allUserRoles: UserRole[] = [];
@@ -317,7 +398,7 @@ export class UsersListComponent implements OnInit {
   protected readonly inviteSubmitted = signal(false);
   protected readonly inviting        = signal(false);
   protected readonly inviteError     = signal('');
-  protected inviteForm = { name: '', email: '', roleIds: [] as string[] };
+  protected inviteForm = { name: '', email: '', roleIds:'' };
 
   ngOnInit(): void {
     this.load();
@@ -330,10 +411,12 @@ export class UsersListComponent implements OnInit {
     forkJoin({
       users:     this.usersApi.list(),
       roles:     this.usersApi.listRoles(),
+      invites:   this.usersApi.listInvites()
     }).subscribe({
-      next: ({ users, roles }: any) => {
+      next: ({ users, roles, invites }: any) => {
         this.users.set(users.data ?? users);
         this.availableRoles.set(roles.data ?? roles);
+        this.invistes.set(invites)
 
         // Monta mapa userId → Role[]
         const rolesById = new Map<string, Role>((roles.data ?? roles).map((r: Role) => [r.id, r]));
@@ -457,7 +540,7 @@ export class UsersListComponent implements OnInit {
 
   /* ── Invite ─────────────────────────────────────────────── */
   openInvite(): void {
-    this.inviteForm = { name: '', email: '', roleIds: [] };
+    this.inviteForm = { name: '', email: '', roleIds: '' };
     this.inviteSubmitted.set(false);
     this.inviteError.set('');
     this.inviteOpen.set(true);
@@ -478,10 +561,7 @@ export class UsersListComponent implements OnInit {
   }
 
   protected toggleRole(roleId: string): void {
-    const ids = this.inviteForm.roleIds;
-    this.inviteForm.roleIds = ids.includes(roleId)
-      ? ids.filter(id => id !== roleId)
-      : [...ids, roleId];
+    this.inviteForm.roleIds = roleId;
   }
 
   async sendInvite(): Promise<void> {
@@ -491,20 +571,16 @@ export class UsersListComponent implements OnInit {
     if (!this.inviteForm.name || !this.inviteForm.email || !this.inviteForm.roleIds.length) return;
 
     this.inviting.set(true);
+
     try {
       const user = await firstValueFrom(
         this.usersApi.invite({
           name:    this.inviteForm.name,
           email:   this.inviteForm.email,
-          roleIds: this.inviteForm.roleIds,
+          roleId: this.inviteForm.roleIds,
         })
       );
 
-      await Promise.all(
-        this.inviteForm.roleIds.map(roleId =>
-          firstValueFrom(this.usersApi.grantRole({ userId: user.id, roleId }))
-        )
-      );
 
       this.toast.success('Usuário criado!', { message: `${this.inviteForm.email} foi adicionado ao tenant.` });
       this.closeInvite();

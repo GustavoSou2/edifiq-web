@@ -16,11 +16,11 @@ import { ButtonComponent }      from '../../../../shared/components/button/butto
 import { InputComponent }       from '../../../../shared/components/input/input.component';
 import { Order, OrderSummary, OrderStatus }   from '../../../../shared/types/domain.types';
 import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
+import { filter, map } from 'rxjs';
 
 const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
   { value: 'all',        label: 'Todos' },
   { value: 'open',       label: 'Aberto' },
-  { value: 'in_auction', label: 'Em Leilão' },
 ];
 
 @Component({
@@ -137,8 +137,8 @@ export class AvailableOrdersListComponent implements OnInit {
   private load(): void {
     this.isLoading.set(true);
     this.error.set(null);
-    this.ordersApi.list({ status: 'open' }).subscribe({
-      next:  res => { this.orders.set(res.data); this.isLoading.set(false); },
+    this.ordersApi.list({ status: 'open' }).pipe(map((orders: any) => orders.filter((order: any) => order.status === 'open'))).subscribe({
+      next:  (orders: any) => { this.orders.set(orders); this.isLoading.set(false); },
       error: ()  => { this.error.set('Erro ao carregar pedidos.'); this.isLoading.set(false); },
     });
   }

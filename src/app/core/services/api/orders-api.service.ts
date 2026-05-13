@@ -70,6 +70,11 @@ export class OrdersApiService extends ApiService {
   create(payload: CreateOrderPayload): Observable<Order> {
     return this.post<Order>('/v1/orders', payload);
   }
+  
+  /** Cria um nova proposta */
+  createProposal(id: string, payload: any): Observable<any> {
+    return this.post<Order>(`/v1/orders/${id}/proposal`, payload);
+  }
 
   /** Publica o pedido (distribui para fornecedores) */
   publish(id: string): Observable<unknown> {
@@ -77,8 +82,8 @@ export class OrdersApiService extends ApiService {
   }
 
   /** Lista distribuições de um pedido */
-  listDistributions(id: string): Observable<unknown[]> {
-    return this.get<unknown[]>(`/v1/orders/${id}/distributions`);
+  listDistributions(id: string): Observable<any[]> {
+    return this.get<any[]>(`/v1/orders/${id}/distributions`);
   }
 
   /** Lista propostas de um pedido */
