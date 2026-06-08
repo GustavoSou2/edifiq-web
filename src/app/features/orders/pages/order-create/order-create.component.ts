@@ -466,7 +466,7 @@ export class OrderCreateComponent implements OnInit {
 
   ngOnInit(): void {
     this.categoryLoading.set(true);
-    firstValueFrom(this.categoriesApi.listAll().pipe(map((r: any)=> r._embedded.categories))).then(cats => {
+    firstValueFrom(this.categoriesApi.listAll().pipe(map((r: any)=> r.data))).then(cats => {
       this.categoryOptions.set(cats.map((c: Category) => ({ value: c.id, label: c.name })));
     }).catch(() => {
       // campo é opcional, silencia o erro

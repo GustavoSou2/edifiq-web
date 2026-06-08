@@ -15,7 +15,9 @@ import { ButtonComponent }      from '../../../../shared/components/button/butto
 import { Proposal, Delivery }   from '../../../../shared/types/domain.types';
 import { ProposalsApiService }  from '../../../../core/services/api/proposals-api.service';
 import { DeliveriesApiService } from '../../../../core/services/api/deliveries-api.service';
-import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
+import { RolePanelService }     from '../../../../core/services/role-panel.service';
+import { SupplierProfile }      from '../../../../core/services/api/supplier-profile-api.service';
+import { SupplierOnboardingModalComponent } from '../../components/supplier-onboarding-modal/supplier-onboarding-modal.component';
 
 @Component({
   selector: 'edq-supplier-dashboard-home',
@@ -24,12 +26,37 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
   imports: [
     RouterLink, CurrencyPipe, DatePipe,
     PageHeaderComponent, StatCardComponent, StatusBadgeComponent, ButtonComponent,
+    SupplierOnboardingModalComponent,
   ],
   template: `
+    <!-- Modal de onboarding — exibido quando o tenant ainda não tem perfil de fornecedor -->
+    @if (rolePanel.needsOnboarding()) {
+      <edq-supplier-onboarding-modal
+        (completed)="onOnboardingComplete($event)"
+        (dismissed)="onOnboardingDismissed()"
+      />
+    }
+
     <edq-page-header
       title="Dashboard do Fornecedor"
-      subtitle="Visão geral das suas propostas e entregas"
+      [subtitle]="rolePanel.supplierProfile()
+        ? 'Bem-vindo, ' + rolePanel.supplierProfile()!.companyName
+        : 'Visão geral das suas propostas e entregas'"
     />
+
+    <!-- Banner de perfil incompleto (após dispensar o modal) -->
+    @if (onboardingDismissed() && !rolePanel.supplierProfile()) {
+      <div class="onboarding-banner" role="alert">
+        <span>⚠️</span>
+        <div>
+          <strong>Seu perfil de fornecedor não está ativo.</strong>
+          <span>Você não aparecerá para compradores até ativar seu perfil.</span>
+        </div>
+        <button class="onboarding-banner__btn" type="button" (click)="showOnboarding()">
+          Ativar agora
+        </button>
+      </div>
+    }
 
     <div class="stats-grid">
       <edq-stat-card
@@ -59,6 +86,28 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
       />
     </div>
 
+    <!-- Perfil de fornecedor resumido -->
+    @if (rolePanel.supplierProfile()) {
+      <div class="profile-card">
+        <div class="profile-card__info">
+          <span class="profile-card__icon" aria-hidden="true">🏭</span>
+          <div>
+            <p class="profile-card__name">{{ rolePanel.supplierProfile()!.companyName }}</p>
+            <p class="profile-card__meta">
+              📍 {{ rolePanel.supplierProfile()!.city }}, {{ rolePanel.supplierProfile()!.state }}
+              &nbsp;·&nbsp;
+              🚚 Raio: {{ rolePanel.supplierProfile()!.maxDeliveryKm }} km
+              &nbsp;·&nbsp;
+              ★ {{ rolePanel.supplierProfile()!.reputationScore.toFixed(1) }}
+            </p>
+          </div>
+        </div>
+        <edq-button variant="ghost" size="sm" routerLink="/app/supplier-profile">
+          Editar perfil
+        </edq-button>
+      </div>
+    }
+
     <!-- Propostas Recentes -->
     <section class="dashboard-section">
       <div class="section-header">
@@ -76,7 +125,6 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
                 <th scope="col">Pedido</th>
                 <th scope="col">Valor</th>
                 <th scope="col">Status</th>
-                <th scope="col">Enviada em</th>
                 <th scope="col"><span class="sr-only">Ações</span></th>
               </tr>
             </thead>
@@ -86,13 +134,22 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
                   <td><span class="mono">{{ p.distributionId }}</span></td>
                   <td><span class="price">{{ p.totalPrice | currency:'BRL':'symbol':'1.2-2':'pt-BR' }}</span></td>
                   <td><edq-status-badge [status]="p.status" /></td>
-                  <td class="date-cell">—</td>
                   <td>
                     <edq-button variant="ghost" size="sm" [routerLink]="['/app/my-proposals', p.id]">Ver</edq-button>
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="5"><div class="table-empty"><span>💬</span><p>Nenhuma proposta ainda.</p></div></td></tr>
+                <tr>
+                  <td colspan="4">
+                    <div class="table-empty">
+                      <span>💬</span>
+                      <p>Nenhuma proposta ainda.</p>
+                      <edq-button variant="primary" size="sm" routerLink="/app/available-orders">
+                        Ver pedidos disponíveis
+                      </edq-button>
+                    </div>
+                  </td>
+                </tr>
               }
             </tbody>
           </table>
@@ -116,7 +173,6 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
               <div class="delivery-card__icon" aria-hidden="true">🚛</div>
               <div class="delivery-card__body">
                 <div class="delivery-card__ref">{{ d.selectionId ?? d.id }}</div>
-                <div class="delivery-card__supplier">—</div>
               </div>
               <div class="delivery-card__date">
                 <span class="delivery-card__date-label">Agendado</span>
@@ -138,7 +194,8 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
         <span class="quick-action-banner__icon">🔍</span>
         <div>
           <p class="quick-action-banner__title">
-            {{ availableOrdersCount() }} pedido{{ availableOrdersCount() !== 1 ? 's' : '' }} disponível{{ availableOrdersCount() !== 1 ? 'is' : '' }} para você
+            {{ availableOrdersCount() }} pedido{{ availableOrdersCount() !== 1 ? 's' : '' }}
+            disponível{{ availableOrdersCount() !== 1 ? 'is' : '' }} para você
           </p>
           <p class="quick-action-banner__sub">Envie propostas e aumente seu faturamento</p>
         </div>
@@ -148,37 +205,99 @@ import { OrdersApiService }     from '../../../../core/services/api/orders-api.s
       </edq-button>
     </section>
   `,
+  styles: [`
+    .onboarding-banner {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #92400e;
+    }
+    .onboarding-banner strong { display: block; font-weight: 600; }
+    .onboarding-banner__btn {
+      margin-left: auto;
+      padding: 6px 14px;
+      background: #d97706;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .onboarding-banner__btn:hover { background: #b45309; }
+
+    .profile-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 20px;
+      background: var(--surface, #fff);
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    .profile-card__info { display: flex; align-items: center; gap: 12px; }
+    .profile-card__icon { font-size: 28px; }
+    .profile-card__name { font-size: 15px; font-weight: 600; color: var(--text-primary, #111827); margin: 0 0 2px; }
+    .profile-card__meta { font-size: 12px; color: var(--text-secondary, #6b7280); margin: 0; }
+  `],
   styleUrl: './supplier-dashboard-home.component.scss',
 })
 export class SupplierDashboardHomeComponent implements OnInit {
   private readonly proposalsApi  = inject(ProposalsApiService);
   private readonly deliveriesApi = inject(DeliveriesApiService);
-  private readonly ordersApi     = inject(OrdersApiService);
+  protected readonly rolePanel   = inject(RolePanelService);
 
-  protected readonly proposals         = signal<Proposal[]>([]);
-  protected readonly allDeliveries     = signal<Delivery[]>([]);
-  protected readonly proposalsLoading  = signal(false);
-  protected readonly deliveriesLoading = signal(false);
+  protected readonly proposals            = signal<Proposal[]>([]);
+  protected readonly allDeliveries        = signal<Delivery[]>([]);
+  protected readonly proposalsLoading     = signal(false);
+  protected readonly deliveriesLoading    = signal(false);
   protected readonly availableOrdersCount = signal(0);
-
-  protected readonly acceptedCount = signal(0);
-  protected readonly conversionRate = signal('');
-  protected readonly pendingDeliveries = signal<Delivery[]>([]);
+  protected readonly acceptedCount        = signal(0);
+  protected readonly conversionRate       = signal('');
+  protected readonly pendingDeliveries    = signal<Delivery[]>([]);
+  protected readonly onboardingDismissed  = signal(false);
 
   ngOnInit(): void {
+    // Verifica se o tenant já tem perfil de fornecedor
+    this.rolePanel.loadSupplierProfile();
     this.loadProposals();
     this.loadDeliveries();
     this.loadAvailableOrders();
   }
 
+  protected onOnboardingComplete(profile: SupplierProfile): void {
+    this.rolePanel.onboardingComplete(profile);
+    this.onboardingDismissed.set(false);
+  }
+
+  protected onOnboardingDismissed(): void {
+    this.rolePanel.needsOnboarding.set(false);
+    this.onboardingDismissed.set(true);
+  }
+
+  protected showOnboarding(): void {
+    this.onboardingDismissed.set(false);
+    this.rolePanel.needsOnboarding.set(true);
+  }
+
   private loadProposals(): void {
     this.proposalsLoading.set(true);
-    this.proposalsApi.listByOrder('me').subscribe({
-      next: res => {
-        this.proposals.set(res.data);
-        const accepted = res.data.filter(p => p.status === 'submitted').length;
+    this.proposalsApi.listReceived().subscribe({
+      next: dists => {
+        const proposals = dists.filter(d => d.proposal).map(d => d.proposal!) as any[];
+        this.proposals.set(proposals);
+        const accepted = proposals.filter((p: any) => p.status === 'submitted').length;
         this.acceptedCount.set(accepted);
-        const rate = res.data.length ? Math.round((accepted / res.data.length) * 100) : 0;
+        const rate = proposals.length ? Math.round((accepted / proposals.length) * 100) : 0;
         this.conversionRate.set(`${rate}% de conversão`);
         this.proposalsLoading.set(false);
       },
@@ -189,9 +308,11 @@ export class SupplierDashboardHomeComponent implements OnInit {
   private loadDeliveries(): void {
     this.deliveriesLoading.set(true);
     this.deliveriesApi.list({ status: 'scheduled' }).subscribe({
-      next: res => {
-        this.allDeliveries.set(res.data);
-        this.pendingDeliveries.set(res.data.filter(d => d.status === 'scheduled' || d.status === 'in_transit'));
+      next: deliveries => {
+        this.allDeliveries.set(deliveries);
+        this.pendingDeliveries.set(
+          deliveries.filter(d => d.status === 'scheduled' || d.status === 'in_transit')
+        );
         this.deliveriesLoading.set(false);
       },
       error: () => this.deliveriesLoading.set(false),
@@ -199,8 +320,8 @@ export class SupplierDashboardHomeComponent implements OnInit {
   }
 
   private loadAvailableOrders(): void {
-    this.ordersApi.list({ status: 'open' }).subscribe({
-      next: res => this.availableOrdersCount.set(res.total),
+    this.proposalsApi.listReceived().subscribe({
+      next: dists => this.availableOrdersCount.set(dists.length),
       error: () => {},
     });
   }

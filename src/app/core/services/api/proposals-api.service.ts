@@ -5,64 +5,86 @@ import { ApiService } from '../api.service';
 import {
   Proposal,
   ProposalItem,
-  PaginatedResponse,
+  ProposalStatus,
   PaginationParams,
 } from '../../../shared/types/domain.types';
 
 export interface SubmitProposalPayload {
-  orderId:     string;
-  totalPrice:  number;
-  deliveryMin: number;
+  status:             'submitted';
+  deliveryEtaHours?:  number | null;
+  proposedDeliveryAt?: string | null;
+  message?:           string | null;
   items: {
-    orderItemId: string;
-    unitPrice:   number;
-    quantity:    number;
-    available:   boolean;
+    orderItemId:  string;
+    unitPrice:    number;
+    totalPrice:   number;
+    availability: 'in_stock' | 'backorder' | 'unavailable';
   }[];
 }
 
-export interface SelectProposalPayload {
-  reason?: string;
+/** Distribuição recebida pelo fornecedor — retornada por GET /v1/distributions/received */
+export interface ReceivedDistribution {
+  id:               string;
+  orderId:          string;
+  supplierId:       string;
+  buyerTenantId:    string;
+  supplierTenantId: string;
+  status:           string;
+  distributedAt:    string;
+  /** Proposta enviada pelo fornecedor para esta distribuição (quando existir) */
+  proposal?: Proposal;
+  /** Dados do pedido expandidos (quando disponíveis) */
+  order?: {
+    id:              string;
+    title:           string | null;
+    referenceCode:   string | null;
+    status:          string;
+    isUrgent:        boolean;
+    deliveryAddress: string;
+    deliveryCity:    string | null;
+    deliveryState:   string | null;
+    deliveryLat:     number | null;
+    deliveryLng:     number | null;
+    notes:           string | null;
+    createdAt:       string;
+    items: {
+      id:          string;
+      description: string;
+      quantity:    number;
+      unit:        string;
+      notes:       string | null;
+    }[];
+  };
 }
 
 @Injectable({ providedIn: 'root' })
 export class ProposalsApiService extends ApiService {
 
-  /** Lista propostas de um pedido */
-  listByOrder(orderId: string, params?: PaginationParams): Observable<PaginatedResponse<Proposal>> {
-    return this.get<PaginatedResponse<Proposal>>(
-      `/orders/${orderId}/proposals`,
+  /** Lista distribuições recebidas pelo tenant como fornecedor */
+  listReceived(): Observable<ReceivedDistribution[]> {
+    return this.get<ReceivedDistribution[]>('/v1/distributions/received');
+  }
+
+  /** Envia proposta para uma distribuição */
+  submitToDistribution(distributionId: string, payload: SubmitProposalPayload): Observable<Proposal> {
+    return this.post<Proposal>(`/v1/distributions/${distributionId}/proposals`, payload);
+  }
+
+  /** Retira uma proposta (fornecedor) */
+  withdraw(distributionId: string): Observable<Proposal> {
+    return this.post<Proposal>(`/v1/distributions/${distributionId}/proposals/withdraw`, {});
+  }
+
+  /** Lista propostas de um pedido (visão comprador) */
+  listByOrder(orderId: string, params?: PaginationParams): Observable<Proposal[]> {
+    return this.get<Proposal[]>(
+      `/v1/orders/${orderId}/proposals`,
       params as Record<string, unknown>,
     );
   }
 
-  /** Busca uma proposta pelo ID */
-  findById(id: string): Observable<Proposal> {
-    return this.get<Proposal>(`/proposals/${id}`);
-  }
-
-  /** Envia uma proposta (fornecedor) */
-  submit(payload: SubmitProposalPayload): Observable<Proposal> {
-    return this.post<Proposal>('/proposals', payload);
-  }
-
-  /** Atualiza uma proposta ainda não aceita */
-  update(id: string, payload: Partial<SubmitProposalPayload>): Observable<Proposal> {
-    return this.put<Proposal>(`/proposals/${id}`, payload);
-  }
-
-  /** Seleciona uma proposta (comprador) — encerra o leilão */
-  select(id: string, payload?: SelectProposalPayload): Observable<Proposal> {
-    return this.post<Proposal>(`/proposals/${id}/select`, payload ?? {});
-  }
-
-  /** Retira uma proposta (fornecedor) */
-  withdraw(id: string): Observable<Proposal> {
-    return this.post<Proposal>(`/proposals/${id}/withdraw`, {});
-  }
-
   /** Lista os itens de uma proposta */
   listItems(proposalId: string): Observable<ProposalItem[]> {
-    return this.get<ProposalItem[]>(`/proposals/${proposalId}/items`);
+    return this.get<ProposalItem[]>(`/v1/proposals/${proposalId}/items`);
   }
 }

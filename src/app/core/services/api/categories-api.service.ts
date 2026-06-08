@@ -20,36 +20,36 @@ export class CategoriesApiService extends ApiService {
 
   /** Lista todas as categorias (árvore completa) */
   listAll(): Observable<Category[]> {
-    return this.getRaw<Category[]>('/categories');
+    return this.getRaw<Category[]>('/v1/categories');
   }
 
   /** Lista apenas categorias raiz (sem parent) */
   listRoots(): Observable<Category[]> {
-    return this.getRaw<Category[]>('/categories', { root: true });
+    return this.getRaw<Category[]>('/v1/categories', { root: true });
   }
 
   /** Lista filhas de uma categoria */
   listChildren(parentId: string): Observable<Category[]> {
-    return this.getRaw<Category[]>(`/categories/${parentId}/children`);
+    return this.getRaw<Category[]>(`/v1/categories/${parentId}/children`);
   }
 
   /** Cria uma categoria */
   create(payload: CreateCategoryPayload): Observable<Category> {
-    return this.post<Category>('/categories', payload);
+    return this.post<Category>('/v1/categories', payload);
   }
 
   /** Atualiza uma categoria */
   update(id: string, payload: UpdateCategoryPayload): Observable<Category> {
-    return this.put<Category>(`/categories/${id}`, payload);
+    return this.put<Category>(`/v1/categories/${id}`, payload);
   }
 
   /** Remove uma categoria */
   remove(id: string): Observable<void> {
-    return this.delete<void>(`/categories/${id}`);
+    return this.delete<void>(`/v1/categories/${id}`);
   }
 
   /** Busca categorias por nome (para autocomplete) */
   search(query: string): Observable<Category[]> {
-    return this.getRaw<Category[]>('/categories/search', { q: query });
+    return this.getRaw<Category[]>('/v1/categories/search', { q: query });
   }
 }

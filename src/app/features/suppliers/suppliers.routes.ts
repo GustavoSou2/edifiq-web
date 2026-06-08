@@ -9,6 +9,22 @@ export const SUPPLIERS_ROUTES: Routes = [
       ),
   },
   {
+    path: 'new',
+    loadComponent: () =>
+      import('./pages/supplier-form/supplier-form.component').then(
+        m => m.SupplierFormComponent,
+      ),
+    title: 'Novo Fornecedor — Edifiq',
+  },
+  {
+    path: ':id/edit',
+    loadComponent: () =>
+      import('./pages/supplier-form/supplier-form.component').then(
+        m => m.SupplierFormComponent,
+      ),
+    title: 'Editar Fornecedor — Edifiq',
+  },
+  {
     path: ':id',
     loadComponent: () =>
       import('./pages/supplier-detail/supplier-detail.component').then(

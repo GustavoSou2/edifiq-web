@@ -14,14 +14,7 @@ import { PageHeaderComponent }  from '../../../../shared/components/page-header/
 import { StatusBadgeComponent } from '../../../../shared/components/status-badge/status-badge.component';
 import { ButtonComponent }      from '../../../../shared/components/button/button.component';
 import { InputComponent }       from '../../../../shared/components/input/input.component';
-import { Order, OrderSummary, OrderStatus }   from '../../../../shared/types/domain.types';
-import { OrdersApiService }     from '../../../../core/services/api/orders-api.service';
-import { filter, map } from 'rxjs';
-
-const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
-  { value: 'all',        label: 'Todos' },
-  { value: 'open',       label: 'Aberto' },
-];
+import { ProposalsApiService, ReceivedDistribution } from '../../../../core/services/api/proposals-api.service';
 
 @Component({
   selector: 'edq-available-orders-list',
@@ -31,24 +24,10 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
   template: `
     <edq-page-header
       title="Pedidos Disponíveis"
-      subtitle="Pedidos abertos para envio de propostas"
+      subtitle="Pedidos distribuídos para você enviar propostas"
     />
 
     <div class="filters-bar">
-      <div class="filter-tabs" role="tablist" aria-label="Filtrar por status">
-        @for (f of statusFilters; track f.value) {
-          <button
-            class="filter-tab"
-            role="tab"
-            [class.filter-tab--active]="activeStatus() === f.value"
-            [attr.aria-selected]="activeStatus() === f.value"
-            (click)="activeStatus.set(f.value)"
-          >
-            {{ f.label }}
-          </button>
-        }
-      </div>
-
       <div class="filters-right">
         <edq-input
           type="search"
@@ -72,37 +51,38 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
       <div class="table-error" role="alert">{{ error() }}</div>
     } @else {
       <p class="results-count">
-        {{ filteredOrders().length }} pedido{{ filteredOrders().length !== 1 ? 's' : '' }} encontrado{{ filteredOrders().length !== 1 ? 's' : '' }}
+        {{ filtered().length }} pedido{{ filtered().length !== 1 ? 's' : '' }} encontrado{{ filtered().length !== 1 ? 's' : '' }}
       </p>
 
       <div class="orders-grid">
-        @for (order of filteredOrders(); track order.id) {
+        @for (dist of filtered(); track dist.id) {
           <div class="order-card">
-
             <div class="order-card__header">
               <div class="order-card__ref-row">
-                <span class="order-card__ref">{{ order.title }}</span>
+                <span class="order-card__ref">
+                  {{ dist.order?.referenceCode ?? dist.order?.title ?? dist.orderId }}
+                </span>
+                @if (dist.order?.isUrgent) {
+                  <span class="badge-urgent">URGENTE</span>
+                }
               </div>
-              <edq-status-badge [status]="order.status" />
+              <edq-status-badge [status]="$any(dist.status)" />
             </div>
 
-            <p class="order-card__items">
-              {{ order.deliveryCity ? '📍 ' + order.deliveryCity + ', ' + order.deliveryState : '—' }}
-            </p>
-
-            @if (order.deliveryCity) {
-              <div class="order-card__auction">
-                <span class="order-card__auction-icon">📅</span>
-                <span>{{ order.createdAt | date:'dd/MM/yyyy' }}</span>
-              </div>
+            @if (dist.order?.deliveryCity) {
+              <p class="order-card__location">
+                📍 {{ dist.order!.deliveryCity }}, {{ dist.order!.deliveryState }}
+              </p>
             }
 
+            <p class="order-card__items-count">
+              {{ dist.order?.items?.length ?? 0 }} ite{{ (dist.order?.items?.length ?? 0) === 1 ? 'm' : 'ns' }}
+            </p>
+
             <div class="order-card__footer">
-              <span class="order-card__proposals">
-                {{ order.isUrgent ? '🔥 Urgente' : 'Normal' }}
-              </span>
-              <edq-button variant="primary" size="sm" [routerLink]="[order.id]">
-                Enviar Proposta
+              <span class="order-card__date">{{ dist.distributedAt | date:'dd/MM/yyyy' }}</span>
+              <edq-button variant="primary" size="sm" [routerLink]="[dist.id]">
+                Ver e Propor
               </edq-button>
             </div>
           </div>
@@ -110,7 +90,9 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
           <div class="empty-state">
             <span>🔍</span>
             <p>Nenhum pedido disponível no momento.</p>
-            <span class="empty-state__hint">Novos pedidos aparecem aqui assim que forem publicados.</span>
+            <span class="empty-state__hint">
+              Novos pedidos aparecem aqui quando compradores publicam pedidos na sua região.
+            </span>
           </div>
         }
       </div>
@@ -119,16 +101,14 @@ const STATUS_FILTERS: { value: OrderStatus | 'all'; label: string }[] = [
   styleUrl: './available-orders-list.component.scss',
 })
 export class AvailableOrdersListComponent implements OnInit {
-  private readonly ordersApi = inject(OrdersApiService);
+  private readonly proposalsApi = inject(ProposalsApiService);
 
-  protected readonly statusFilters = STATUS_FILTERS;
-  protected readonly activeStatus  = signal<OrderStatus | 'all'>('all');
-  protected searchQuery            = '';
-  protected urgentOnly             = false;
+  protected searchQuery = '';
+  protected urgentOnly  = false;
 
-  protected readonly orders    = signal<OrderSummary[]>([]);
-  protected readonly isLoading = signal(false);
-  protected readonly error     = signal<string | null>(null);
+  protected readonly distributions = signal<ReceivedDistribution[]>([]);
+  protected readonly isLoading     = signal(false);
+  protected readonly error         = signal<string | null>(null);
 
   ngOnInit(): void {
     this.load();
@@ -137,20 +117,28 @@ export class AvailableOrdersListComponent implements OnInit {
   private load(): void {
     this.isLoading.set(true);
     this.error.set(null);
-    this.ordersApi.list({ status: 'open' }).pipe(map((orders: any) => orders.filter((order: any) => order.status === 'open'))).subscribe({
-      next:  (orders: any) => { this.orders.set(orders); this.isLoading.set(false); },
-      error: ()  => { this.error.set('Erro ao carregar pedidos.'); this.isLoading.set(false); },
+    this.proposalsApi.listReceived().subscribe({
+      next:  dists => { this.distributions.set(dists); this.isLoading.set(false); },
+      error: ()    => { this.error.set('Erro ao carregar pedidos disponíveis.'); this.isLoading.set(false); },
     });
   }
 
-  protected readonly filteredOrders = computed(() => {
-    let list = this.orders();
-    const status = this.activeStatus();
-    if (status !== 'all') list = list.filter(o => o.status === status);
+  protected readonly filtered = computed(() => {
+    let list = this.distributions();
+
+    if (this.urgentOnly) {
+      list = list.filter(d => d.order?.isUrgent);
+    }
+
     if (this.searchQuery) {
       const q = this.searchQuery.toLowerCase();
-      list = list.filter(o => o.title?.toLowerCase().includes(q));
+      list = list.filter(d =>
+        d.order?.title?.toLowerCase().includes(q) ||
+        d.order?.referenceCode?.toLowerCase().includes(q) ||
+        d.order?.deliveryCity?.toLowerCase().includes(q),
+      );
     }
+
     return list;
   });
 }

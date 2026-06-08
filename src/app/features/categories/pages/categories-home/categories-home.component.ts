@@ -214,8 +214,9 @@ export class CategoriesHomeComponent implements OnInit {
 
   private load(): void {
     this.isLoading.set(true);
-    this.categoriesApi.listAll().subscribe({
-      next:  ({ _embedded: { categories: cats }}: any) => { this.categories.set(cats); this.isLoading.set(false); },
+    this.categoriesApi.listAll()
+    .subscribe({
+      next:  (cats: any) => { this.categories.set(cats); this.isLoading.set(false); },
       error: ()   => { this.error.set('Erro ao carregar categorias.'); this.isLoading.set(false); },
     });
   }

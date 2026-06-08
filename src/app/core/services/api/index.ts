@@ -16,8 +16,8 @@ export { TenantApiService }     from './tenant-api.service';
 export { CategoriesApiService } from './categories-api.service';
 
 export type { CreateOrderPayload, SelectProposalPayload as OrderSelectProposalPayload, CreateRatingPayload } from './orders-api.service';
-export type { SubmitProposalPayload, SelectProposalPayload } from './proposals-api.service';
-export type { CreateSupplierPayload }                      from './suppliers-api.service';
-export type { UpdateDeliveryPayload, RateDeliveryPayload } from './deliveries-api.service';
+export type { SubmitProposalPayload, ReceivedDistribution }                from './proposals-api.service';
+export type { CreateSupplierPayload, UpdateSupplierPayload }               from './suppliers-api.service';
+export type { UpdateDeliveryStatusPayload, DeliveryDetail }                from './deliveries-api.service';
 export type { InviteUserPayload, CreateRolePayload }       from './users-api.service';
 export type { UpdateTenantPayload, CreateWebhookPayload }  from './tenant-api.service';

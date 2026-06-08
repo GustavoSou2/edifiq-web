@@ -168,6 +168,10 @@ export interface Supplier {
   /** Retornado como "active" pelo backend */
   active:          boolean;
   reputationScore: number;
+  /** ID do tenant da plataforma que este supplier representa (opcional). */
+  linkedTenantId:   string | null;
+  /** Nome do tenant vinculado (para exibição). */
+  linkedTenantName: string | null;
 }
 
 /* ── order_items ────────────────────────────────────────────*/
@@ -238,13 +242,26 @@ export interface OrderDistribution {
 /* ── proposals ──────────────────────────────────────────────*/
 /** OrderController.ProposalResponse / ProposalController.ProposalResponse */
 export interface Proposal {
-  id:                 ProposalId;
-  distributionId:     string;
-  status:             ProposalStatus;
-  totalPrice:         number;
-  deliveryEtaHours:   number | null;
-  proposedDeliveryAt: string | null;
-  message:            string | null;
+  id:                      ProposalId;
+  distributionId:          string;
+  status:                  ProposalStatus;
+  totalPrice:              number;
+  deliveryEtaHours:        number | null;
+  proposedDeliveryAt:      string | null;
+  message:                 string | null;
+  // Supplier
+  supplierName:            string | null;
+  supplierCity:            string | null;
+  supplierState:           string | null;
+  supplierLat:             number | null;
+  supplierLng:             number | null;
+  supplierReputationScore: number | null;
+  supplierTotalRatings:    number | null;
+  supplierTotalDeliveries: number | null;
+  supplierMaxDeliveryKm:   number | null;
+  supplierResponseSlaMin:  number | null;
+  // Items
+  items:                   ProposalItem[] | undefined;
 }
 
 /* ── proposal_items ─────────────────────────────────────────*/

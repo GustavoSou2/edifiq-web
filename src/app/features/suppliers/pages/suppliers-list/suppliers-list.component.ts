@@ -69,9 +69,8 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
             <tr>
               <th scope="col">Nome</th>
               <th scope="col">Cidade/Estado</th>
-              <th scope="col">Categorias</th>
+              <th scope="col">Tipo</th>
               <th scope="col">Reputação</th>
-              <th scope="col">SLA</th>
               <th scope="col">Status</th>
               <th scope="col"><span class="sr-only">Ações</span></th>
             </tr>
@@ -79,19 +78,30 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
           <tbody>
             @for (supplier of filteredSuppliers(); track supplier.id) {
               <tr class="table-row">
-                <td><span class="supplier-name">{{ supplier.name }}</span></td>
-                <td class="city-cell">📍 {{ supplier.city }}, {{ supplier.state }}</td>
                 <td>
-                  <div class="category-chips">
-                    <span class="category-chip category-chip--empty">—</span>
-                  </div>
+                  <span class="supplier-name">{{ supplier.name }}</span>
+                </td>
+                <td class="city-cell">
+                  @if (supplier.city) {
+                    📍 {{ supplier.city }}@if (supplier.state) {, {{ supplier.state }}}
+                  } @else {
+                    <span class="text-muted">—</span>
+                  }
+                </td>
+                <td>
+                  @if (supplier.linkedTenantId) {
+                    <span class="platform-badge" title="Este fornecedor também usa o Edifiq">
+                      🔗 Na plataforma
+                    </span>
+                  } @else {
+                    <span class="manual-badge">Manual</span>
+                  }
                 </td>
                 <td>
                   <span class="reputation-score" [class]="reputationClass(supplier.reputationScore)">
                     ★ {{ supplier.reputationScore.toFixed(1) }}
                   </span>
                 </td>
-                <td class="sla-cell">—</td>
                 <td><edq-status-badge [status]="supplier.active ? 'active' : 'inactive'" /></td>
                 <td>
                   <div class="row-actions">
@@ -101,10 +111,11 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
               </tr>
             } @empty {
               <tr>
-                <td colspan="7">
+                <td colspan="6">
                   <div class="table-empty">
                     <span>🏭</span>
                     <p>Nenhum fornecedor encontrado.</p>
+                    <edq-button variant="primary" size="sm" routerLink="new">Cadastrar primeiro fornecedor</edq-button>
                   </div>
                 </td>
               </tr>
@@ -114,6 +125,30 @@ const STATUS_FILTERS: { value: SupplierStatus | 'all'; label: string }[] = [
       </div>
     }
   `,
+  styles: [`
+    .platform-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+    .manual-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .text-muted { color: #9ca3af; }
+  `],
   styleUrl: './suppliers-list.component.scss',
 })
 export class SuppliersListComponent implements OnInit {
@@ -135,8 +170,8 @@ export class SuppliersListComponent implements OnInit {
     this.isLoading.set(true);
     this.error.set(null);
     this.suppliersApi.list().subscribe({
-      next:  res => { this.suppliers.set(res.data); this.isLoading.set(false); },
-      error: ()  => { this.error.set('Erro ao carregar fornecedores.'); this.isLoading.set(false); },
+      next:  suppliers => { this.suppliers.set(suppliers); this.isLoading.set(false); },
+      error: ()        => { this.error.set('Erro ao carregar fornecedores.'); this.isLoading.set(false); },
     });
   }
 

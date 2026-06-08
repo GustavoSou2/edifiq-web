@@ -2,6 +2,21 @@
    Edifiq — App Layout · Minimal
    ============================================================ */
 
+/* ── Variáveis de tema por painel ─────────────────────────── */
+/* Comprador: azul índigo */
+.app-shell {
+  --panel-color:        #4f46e5;
+  --panel-color-light:  rgba(79, 70, 229, 0.12);
+  --panel-color-glow:   rgba(79, 70, 229, 0.25);
+}
+
+/* Fornecedor: verde esmeralda */
+.app-shell--supplier {
+  --panel-color:        #059669;
+  --panel-color-light:  rgba(5, 150, 105, 0.12);
+  --panel-color-glow:   rgba(5, 150, 105, 0.25);
+}
+
 /* ── Shell ────────────────────────────────────────────────── */
 .app-shell {
   display:    flex;
@@ -35,6 +50,97 @@
   height:        var(--topbar-h);
   flex-shrink:   0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Sidebar inner scroll container */
+.sidebar__inner {
+  display:        flex;
+  flex-direction: column;
+  flex:           1;
+  overflow:       hidden;
+}
+
+/* Sidebar top: logo + panel badge */
+.sidebar__top {
+  flex-shrink: 0;
+}
+
+/* Panel badge — identidade visual forte do painel ativo */
+.panel-badge {
+  display:       flex;
+  align-items:   center;
+  gap:           10px;
+  margin:        8px 10px 4px;
+  padding:       10px 12px;
+  background:    var(--panel-color-light, rgba(79,70,229,.12));
+  border:        1px solid var(--panel-color-glow, rgba(79,70,229,.25));
+  border-radius: 10px;
+  transition:    background .3s, border-color .3s;
+}
+
+.panel-badge__icon {
+  width:           28px;
+  height:          28px;
+  border-radius:   7px;
+  background:      var(--panel-color, #4f46e5);
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  color:           #fff;
+  flex-shrink:     0;
+}
+
+.panel-badge__text {
+  display:        flex;
+  flex-direction: column;
+  gap:            1px;
+  min-width:      0;
+}
+
+.panel-badge__role {
+  font-size:   13px;
+  font-weight: 700;
+  color:       #fff;
+  white-space: nowrap;
+}
+
+.panel-badge__desc {
+  font-size:     10px;
+  color:         rgba(255,255,255,.5);
+  white-space:   nowrap;
+  overflow:      hidden;
+  text-overflow: ellipsis;
+}
+
+/* Topbar panel chip */
+.topbar__panel-chip {
+  display:       flex;
+  align-items:   center;
+  gap:           6px;
+  padding:       4px 10px;
+  background:    var(--panel-color-light, rgba(79,70,229,.08));
+  border:        1px solid var(--panel-color-glow, rgba(79,70,229,.2));
+  border-radius: 99px;
+  font-size:     11px;
+  font-weight:   600;
+  color:         var(--panel-color, #4f46e5);
+  transition:    all .3s;
+
+  @media (max-width: 640px) { display: none; }
+}
+
+.topbar__panel-dot {
+  width:         6px;
+  height:        6px;
+  border-radius: 50%;
+  background:    var(--panel-color, #4f46e5);
+  flex-shrink:   0;
+  animation:     dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .6; transform: scale(.85); }
 }
 
 .logo-mark {
@@ -260,10 +366,18 @@
 
 /* ── Supplier sidebar variant ─────────────────────────────── */
 .sidebar--supplier {
-  .logo-mark          { background: var(--accent-supplier); }
+  .logo-mark          { background: var(--panel-color); }
   .nav-item--active   { background: rgba(255,255,255,0.1) !important; }
-  .plan-chip__dot     { background: var(--accent-supplier); }
-  .sidebar__toggle:hover { background: var(--accent-supplier); border-color: var(--accent-supplier); }
+  .plan-chip__dot     { background: var(--panel-color); }
+  .sidebar__toggle:hover { background: var(--panel-color); border-color: var(--panel-color); }
+}
+
+/* Active nav item usa a cor do painel */
+.nav-item--active {
+  background: var(--panel-color-light, rgba(79,70,229,.15)) !important;
+
+  .nav-item__icon { opacity: 1; color: var(--panel-color, #4f46e5); }
+  .nav-item__label { color: #fff; }
 }
 
 /* ── Main ─────────────────────────────────────────────────── */
